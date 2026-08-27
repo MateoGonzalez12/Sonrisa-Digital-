@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda de la semana · Sonrisa Digital</title>
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/panel.css">
+</head>
+<body class="panel-body">
+  <div class="mobile-shell">
+    <div class="mobile-header">
+      <div class="avatar" id="avatarStaff">--</div>
+      <div>
+        <b id="nombreStaff">Cargando…</b>
+        <span>Agenda móvil · Sonrisa Digital</span>
+      </div>
+      <button class="phone-close" style="margin-left:auto;" onclick="cerrarSesionStaff()">⏻</button>
+    </div>
+    <div class="mobile-tabs">
+      <a class="mobile-tab" href="/agenda/hoy.html">Hoy</a>
+      <a class="mobile-tab active" href="/agenda/semana.html">Semana</a>
+    </div>
+    <div class="mobile-body" id="listaSemana">
+      <div class="empty-state">Cargando…</div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/agenda/common.js"></script>
+  <script src="/js/agenda/semana.js"></script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+// Esquema de base de datos - Sonrisa Digital
+// Motor: PostgreSQL (pensado para desplegarse en Neon/Supabase/Railway)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RolStaff {
+  ODONTOLOGO
+  AUXILIAR
+}
+
+enum EstadoCita {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  COMPLETADA
+  NO_ASISTIO
+}
+
+enum DireccionMensaje {
+  ENTRANTE
+  SALIENTE
+}
+
+model Paciente {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  cedula    String   @unique
+  telefono  String?
+  createdAt DateTime @default(now())
+
+  citas Cita[]
+
+  @@map("pacientes")
+}
+
+model Procedimiento {
+  id           Int      @id @default(autoincrement())
+  nombre       String
+  descripcion  String?
+  duracionMin  Int      @default(30)
+  precio       Decimal? @db.Decimal(10, 2)
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  citas Cita[]
+
+  @@map("procedimientos")
+}
+
+model Odontologo {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  rol       RolStaff @default(ODONTOLOGO)
+  pinHash   String
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  horarios HorarioOdontologo[]
+  bloqueos BloqueoHorario[]
+  citas    Cita[]
+
+  @@map("odontologos")
+}
+
+model HorarioOdontologo {
+  id           Int    @id @default(autoincrement())
+  odontologoId Int
+  diaSemana    Int // 0 = domingo ... 6 = sabado
+  horaInicio   String // "08:00"
+  horaFin      String // "18:00"
+
+  odontologo Odontologo @relation(fields: [odontologoId], references: [id], onDelete: Cascade)
+
+  @@map("horarios_odontologo")
+}
+
+model BloqueoHorario {
+  id           Int       @id @default(autoincrement())
+  odontologoId Int?
+  inicio       DateTime
+  fin          DateTime
+  motivo       String?
+  createdAt    DateTime  @default(now())
+
+  odontologo Odontologo? @relation(fields: [odontologoId], references: [id], onDelete: Cascade)
+
+  @@map("bloqueos_horario")
+}
+
+model Cita {
+  id              Int        @id @default(autoincrement())
+  pacienteId      Int
+  odontologoId    Int
+  procedimientoId Int
+  fechaHora       DateTime
+  estado          EstadoCita @default(PENDIENTE)
+  origen          String     @default("chatbot") // chatbot | admin
+  notasAdmin      String?
+  recordatorioEnviado Boolean @default(false) // evita duplicar el recordatorio (KAN-41)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  paciente      Paciente      @relation(fields: [pacienteId], references: [id])
+  odontologo    Odontologo    @relation(fields: [odontologoId], references: [id])
+  procedimiento Procedimiento @relation(fields: [procedimientoId], references: [id])
+  mensajes      MensajeWhatsapp[]
+
+  // Evita doble reserva del mismo odontologo en el mismo instante (RF-02 / KAN-35)
+  @@unique([odontologoId, fechaHora])
+  @@map("citas")
+}
+
+model MensajeWhatsapp {
+  id                  Int               @id @default(autoincrement())
+  citaId              Int?
+  telefono            String
+  direccion           DireccionMensaje
+  tipo                String // recordatorio | confirmacion | cancelacion | alerta_admin | notificacion_cambio | chatbot
+  contenido           String
+  proveedorMessageId  String?
+  createdAt           DateTime          @default(now())
+
+  cita Cita? @relation(fields: [citaId], references: [id])
+
+  @@map("mensajes_whatsapp")
+}
+
+model AdminUser {
+  id           Int      @id @default(autoincrement())
+  nombre       String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@map("admin_users")
+}
+
+// Guarda el estado de cada conversacion del chatbot para poder continuar
+// la conversacion entre mensajes sin perder contexto (RF-07/RF-08).
+model ConversacionChatbot {
+  id         String   @id @default(uuid())
+  canal      String   @default("web") // web | whatsapp
+  telefono   String?
+  estado     Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("conversaciones_chatbot")
+}

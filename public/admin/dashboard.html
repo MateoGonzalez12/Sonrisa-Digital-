@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resumen · Panel administrativo</title>
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/panel.css">
+</head>
+<body class="panel-body">
+  <div class="admin-shell" id="adminShell">
+    <main class="admin-main">
+      <div class="admin-topbar">
+        <div>
+          <h1>Resumen</h1>
+          <p>Vista general del consultorio en tiempo real.</p>
+        </div>
+      </div>
+
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-card"><b>—</b><span>Citas hoy</span></div>
+        <div class="stat-card"><b>—</b><span>Pendientes por confirmar</span></div>
+        <div class="stat-card"><b>—</b><span>Confirmadas</span></div>
+      </div>
+
+      <div class="panel-card">
+        <h2>Próximas citas</h2>
+        <div class="table-wrap">
+          <table class="data-table" id="tablaProximas">
+            <thead><tr><th>Paciente</th><th>Procedimiento</th><th>Odontólogo</th><th>Fecha y hora</th><th>Estado</th></tr></thead>
+            <tbody><tr><td colspan="5" class="empty-state">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h2>Últimos mensajes de WhatsApp</h2>
+        <div class="table-wrap">
+          <table class="data-table" id="tablaMensajes">
+            <thead><tr><th>Teléfono</th><th>Tipo</th><th>Contenido</th><th>Fecha</th></tr></thead>
+            <tbody><tr><td colspan="4" class="empty-state">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/common.js"></script>
+  <script src="/js/admin/dashboard.js"></script>
+</body>
+</html>

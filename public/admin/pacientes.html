@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacientes · Panel administrativo</title>
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/panel.css">
+</head>
+<body class="panel-body">
+  <div class="admin-shell" id="adminShell">
+    <main class="admin-main">
+      <div class="admin-topbar">
+        <div>
+          <h1>Pacientes</h1>
+          <p>Consulta el historial completo de citas de un paciente por su cédula (RF-18).</p>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="card-actions">
+          <h2 style="margin:0;">Historial por cédula</h2>
+          <div style="display:flex;gap:10px;">
+            <input type="text" id="cedulaInput" placeholder="Número de cédula" style="border:1px solid rgba(122,88,52,.28);border-radius:12px;padding:9px 12px;min-width:200px;">
+            <button class="btn btn-primary btn-sm" id="btnBuscar" type="button">Buscar</button>
+          </div>
+        </div>
+        <div id="resultadoPaciente" class="empty-state">Escribe una cédula y presiona Buscar.</div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/common.js"></script>
+  <script src="/js/admin/pacientes.js"></script>
+</body>
+</html>

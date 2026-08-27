@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Odontólogos · Panel administrativo</title>
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/panel.css">
+</head>
+<body class="panel-body">
+  <div class="admin-shell" id="adminShell">
+    <main class="admin-main">
+      <div class="admin-topbar">
+        <div>
+          <h1>Odontólogos y auxiliares</h1>
+          <p>Gestiona el equipo, sus horarios (RF-20) y los bloqueos de agenda (RF-21).</p>
+        </div>
+        <button class="btn btn-primary" id="btnNuevoStaff" type="button">+ Nuevo</button>
+      </div>
+
+      <div class="panel-card">
+        <h2>Equipo</h2>
+        <div class="table-wrap">
+          <table class="data-table" id="tablaStaff">
+            <thead><tr><th>Nombre</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody><tr><td colspan="4" class="empty-state">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="card-actions">
+          <h2 style="margin:0;">Bloqueos de horario</h2>
+          <button class="btn btn-ghost btn-sm" id="btnNuevoBloqueo" type="button">+ Nuevo bloqueo</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="tablaBloqueos">
+            <thead><tr><th>Alcance</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th></th></tr></thead>
+            <tbody><tr><td colspan="5" class="empty-state">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-form-overlay" id="modalStaff">
+    <form class="modal-form" id="formStaff">
+      <h3 id="tituloStaff">Nuevo integrante</h3>
+      <input type="hidden" id="staffId">
+      <div class="field"><label>Nombre completo</label><input type="text" id="staffNombre" required></div>
+      <div class="field"><label>Rol</label>
+        <select id="staffRol"><option value="ODONTOLOGO">Odontólogo/a</option><option value="AUXILIAR">Auxiliar</option></select>
+      </div>
+      <div class="field"><label>PIN de acceso (4 a 6 dígitos)</label><input type="text" id="staffPin" pattern="\d{4,6}" placeholder="Dejar vacío para no cambiarlo"></div>
+      <div class="field"><label><input type="checkbox" id="staffActivo" checked style="width:auto;margin-right:8px;">Activo</label></div>
+      <div class="form-error" id="errorStaff"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cerrarModalStaff">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-form-overlay" id="modalHorarios">
+    <form class="modal-form" id="formHorarios">
+      <h3>Horario semanal — <span id="nombreHorarioStaff"></span></h3>
+      <input type="hidden" id="horarioStaffId">
+      <div id="diasHorario"></div>
+      <div class="form-error" id="errorHorario"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cerrarModalHorarios">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar horario</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-form-overlay" id="modalBloqueo">
+    <form class="modal-form" id="formBloqueo">
+      <h3>Nuevo bloqueo de horario</h3>
+      <div class="field"><label>Alcance</label>
+        <select id="bloqueoOdontologo"><option value="">Todo el consultorio</option></select>
+      </div>
+      <div class="field"><label>Desde</label><input type="datetime-local" id="bloqueoInicio" required></div>
+      <div class="field"><label>Hasta</label><input type="datetime-local" id="bloqueoFin" required></div>
+      <div class="field"><label>Motivo (opcional)</label><input type="text" id="bloqueoMotivo" placeholder="Vacaciones, permiso, mantenimiento..."></div>
+      <div class="form-error" id="errorBloqueo"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cerrarModalBloqueo">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar bloqueo</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/common.js"></script>
+  <script src="/js/admin/odontologos.js"></script>
+</body>
+</html>

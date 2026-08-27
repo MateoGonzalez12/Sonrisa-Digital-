@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Procedimientos · Panel administrativo</title>
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/panel.css">
+</head>
+<body class="panel-body">
+  <div class="admin-shell" id="adminShell">
+    <main class="admin-main">
+      <div class="admin-topbar">
+        <div>
+          <h1>Catálogo de procedimientos</h1>
+          <p>Los cambios aquí se reflejan al instante en la landing y en el chatbot (RF-19).</p>
+        </div>
+        <button class="btn btn-primary" id="btnNuevo" type="button">+ Nuevo procedimiento</button>
+      </div>
+
+      <div class="panel-card">
+        <div class="table-wrap">
+          <table class="data-table" id="tablaProcedimientos">
+            <thead><tr><th>Nombre</th><th>Duración</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody><tr><td colspan="5" class="empty-state">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-form-overlay" id="modalProcedimiento">
+    <form class="modal-form" id="formProcedimiento">
+      <h3 id="modalTitulo">Nuevo procedimiento</h3>
+      <input type="hidden" id="procedimientoId">
+      <div class="field"><label>Nombre</label><input type="text" id="pNombre" required></div>
+      <div class="field"><label>Descripción</label><textarea id="pDescripcion" rows="3"></textarea></div>
+      <div class="field"><label>Duración (minutos)</label><input type="number" id="pDuracion" min="10" step="5" value="30" required></div>
+      <div class="field"><label>Precio (COP, opcional)</label><input type="number" id="pPrecio" min="0" step="1000"></div>
+      <div class="field"><label><input type="checkbox" id="pActivo" checked style="width:auto;margin-right:8px;">Activo (visible para pacientes)</label></div>
+      <div class="form-error" id="errorProcedimiento"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cerrarModalProc">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/common.js"></script>
+  <script src="/js/admin/procedimientos.js"></script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Citas · Panel administrativo</title>
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/panel.css">
+</head>
+<body class="panel-body">
+  <div class="admin-shell" id="adminShell">
+    <main class="admin-main">
+      <div class="admin-topbar">
+        <div>
+          <h1>Citas</h1>
+          <p>Agenda general del consultorio y búsqueda por paciente.</p>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="card-actions">
+          <h2 style="margin:0;">Agenda del día</h2>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <input type="date" id="fechaAgenda" class="field" style="border:1px solid rgba(122,88,52,.28);border-radius:12px;padding:9px 12px;">
+            <button class="btn btn-ghost btn-sm" id="btnHoy" type="button">Hoy</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="tablaAgenda">
+            <thead><tr><th>Hora</th><th>Paciente</th><th>Procedimiento</th><th>Odontólogo</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody><tr><td colspan="6" class="empty-state">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="card-actions">
+          <h2 style="margin:0;">Buscar por nombre o cédula (RF-17)</h2>
+          <input type="text" id="buscarInput" class="field" placeholder="Nombre o cédula del paciente" style="border:1px solid rgba(122,88,52,.28);border-radius:12px;padding:9px 12px;min-width:240px;">
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="tablaBusqueda">
+            <thead><tr><th>Paciente</th><th>Cédula</th><th>Procedimiento</th><th>Fecha y hora</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody><tr><td colspan="6" class="empty-state">Escribe para buscar.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-form-overlay" id="modalReprogramar">
+    <form class="modal-form" id="formReprogramar">
+      <h3>Reprogramar cita</h3>
+      <div class="field">
+        <label>Nueva fecha y hora</label>
+        <input type="datetime-local" id="nuevaFechaHora" required>
+      </div>
+      <div class="form-error" id="errorReprogramar"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cancelarModal">Cerrar</button>
+        <button type="submit" class="btn btn-primary">Guardar cambio</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/common.js"></script>
+  <script src="/js/admin/citas.js"></script>
+</body>
+</html>

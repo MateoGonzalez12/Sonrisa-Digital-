@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mensajes WhatsApp · Panel administrativo</title>
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/panel.css">
+</head>
+<body class="panel-body">
+  <div class="admin-shell" id="adminShell">
+    <main class="admin-main">
+      <div class="admin-topbar">
+        <div>
+          <h1>Mensajes de WhatsApp</h1>
+          <p>Historial de recordatorios, confirmaciones, cancelaciones y alertas enviadas (RNF-03).</p>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="table-wrap">
+          <table class="data-table" id="tablaMensajes">
+            <thead><tr><th>Fecha</th><th>Dirección</th><th>Teléfono</th><th>Tipo</th><th>Contenido</th></tr></thead>
+            <tbody><tr><td colspan="5" class="empty-state">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/common.js"></script>
+  <script src="/js/admin/mensajes.js"></script>
+</body>
+</html>

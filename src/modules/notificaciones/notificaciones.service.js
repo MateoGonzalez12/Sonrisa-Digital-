@@ -1,0 +1,128 @@
+const prisma = require("../../db/prisma");
+const proveedorWhatsapp = require("./whatsapp");
+const { formatFechaHora } = require("../../utils/fechas");
+
+// si el proveedor de WhatsApp falla, el mensaje se registra igual
+// (sin id de proveedor) y el resto del sistema sigue funcionando; nunca se
+// lanza el error hacia arriba para no tumbar el flujo de citas por una falla
+// externa.
+async function enviarYRegistrar({ telefono, texto, citaId, tipo }) {
+  let proveedorMessageId = null;
+  try {
+    const resultado = await proveedorWhatsapp.enviarMensaje(telefono, texto);
+    proveedorMessageId = resultado.id;
+  } catch (err) {
+    console.error(`[whatsapp] Fallo al enviar mensaje (tipo=${tipo}):`, err.message);
+  }
+
+  return prisma.mensajeWhatsapp.create({
+    data: {
+      citaId: citaId || null,
+      telefono: String(telefono),
+      direccion: "SALIENTE",
+      tipo,
+      contenido: texto,
+      proveedorMessageId,
+    },
+  });
+}
+
+async function registrarMensajeEntrante({ telefono, texto, citaId }) {
+  return prisma.mensajeWhatsapp.create({
+    data: { citaId: citaId || null, telefono, direccion: "ENTRANTE", tipo: "chatbot", contenido: texto },
+  });
+}
+
+// RF-10: recordatorio automatico con anticipacion configurada (KAN-40), sin
+// duplicarse para la misma cita (KAN-41: se marca recordatorioEnviado=true).
+async function enviarRecordatorio(cita) {
+  if (cita.recordatorioEnviado || !cita.paciente.telefono) return null;
+
+  const texto =
+    `Hola ${cita.paciente.nombre.split(" ")[0]} 👋, te recordamos tu cita de ` +
+    `${cita.procedimiento.nombre} el ${formatFechaHora(cita.fechaHora)} en Odontologia Especializada. ` +
+    `Responde *CONFIRMAR* o *CANCELAR*.`;
+
+  await enviarYRegistrar({ telefono: cita.paciente.telefono, texto, citaId: cita.id, tipo: "recordatorio" });
+  await prisma.cita.update({ where: { id: cita.id }, data: { recordatorioEnviado: true } });
+  return texto;
+}
+
+// RF-14: notifica al paciente cuando el consultorio reprograma/cancela su cita.
+async function notificarCambioAlPaciente(cita, mensajeExtra) {
+  if (!cita.paciente.telefono) return null;
+  const texto = `Hola ${cita.paciente.nombre.split(" ")[0]}, tu cita en Odontologia Especializada ${mensajeExtra}`;
+  return enviarYRegistrar({ telefono: cita.paciente.telefono, texto, citaId: cita.id, tipo: "notificacion_cambio" });
+}
+
+// RF-15: alerta al personal administrativo cuando el paciente cancela.
+async function alertarAdministrativo(cita, motivo) {
+  const env = require("../../config/env");
+  if (!env.adminWhatsappNumber) return null;
+  const texto =
+    `⚠️ ${motivo}\nPaciente: ${cita.paciente.nombre} (CC ${cita.paciente.cedula})\n` +
+    `Procedimiento: ${cita.procedimiento.nombre}\nHorario liberado: ${formatFechaHora(cita.fechaHora)}`;
+  return enviarYRegistrar({ telefono: env.adminWhatsappNumber, texto, citaId: cita.id, tipo: "alerta_admin" });
+}
+
+// Confirmación de la cita agendada por el cliente 
+function textoConfirma(texto) {
+  const t = texto.trim().toLowerCase();
+  return /(confirm|si\b|sí|ok|vale)/.test(t);
+}
+
+function textoCancela(texto) {
+  const t = texto.trim().toLowerCase();
+  return /(cancel|no\b)/.test(t);
+}
+
+// procesa la respuesta entrante del paciente por WhatsApp para
+// confirmar o cancelar su proxima cita. Si el mensaje no se reconoce,
+// no se modifica el estado de la cita.
+async function procesarRespuestaEntrante({ telefono, texto }) {
+  const citasService = require("../citas/citas.service");
+  const paciente = await prisma.paciente.findFirst({ where: { telefono } });
+  await registrarMensajeEntrante({ telefono, texto });
+  if (!paciente) return { entendido: false };
+
+  const cita = await prisma.cita.findFirst({
+    where: { pacienteId: paciente.id, estado: { in: ["PENDIENTE", "CONFIRMADA"] }, fechaHora: { gte: new Date() } },
+    orderBy: { fechaHora: "asc" },
+    include: { paciente: true, procedimiento: true, odontologo: true },
+  });
+  if (!cita) return { entendido: false };
+
+  if (textoConfirma(texto)) {
+    const actualizada = await citasService.confirmarCita(cita.id);
+    await enviarYRegistrar({
+      telefono,
+      texto: `Tu cita del ${formatFechaHora(actualizada.fechaHora)} quedo confirmada ✅`,
+      citaId: cita.id,
+      tipo: "confirmacion",
+    });
+    return { entendido: true, accion: "confirmada", cita: actualizada };
+  }
+
+  if (textoCancela(texto)) {
+    const actualizada = await citasService.cancelarCita(cita.id);
+    await enviarYRegistrar({
+      telefono,
+      texto: "Tu cita fue cancelada. Cuando quieras agendar de nuevo, aqui estamos 🙂",
+      citaId: cita.id,
+      tipo: "cancelacion",
+    });
+    await alertarAdministrativo(actualizada, "El paciente cancelo su cita por WhatsApp.");
+    return { entendido: true, accion: "cancelada", cita: actualizada };
+  }
+
+  return { entendido: false };
+}
+
+module.exports = {
+  enviarYRegistrar,
+  registrarMensajeEntrante,
+  enviarRecordatorio,
+  notificarCambioAlPaciente,
+  alertarAdministrativo,
+  procesarRespuestaEntrante,
+};
