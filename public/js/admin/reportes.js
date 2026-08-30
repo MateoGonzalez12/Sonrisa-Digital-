@@ -16,6 +16,15 @@ async function cargarReporte() {
   if (desde) query.set("desde", desde);
   if (hasta) query.set("hasta", hasta);
 
+  // Sin este aviso la pantalla se veia con las tablas vacias durante el viaje a
+  // la API, dando la impresion de que no habia datos.
+  document.getElementById("statGrid").innerHTML =
+    '<div class="stat-card"><b>…</b><span>Calculando…</span></div>';
+  document.querySelector("#tablaEstado tbody").innerHTML =
+    '<tr><td class="empty-state">Cargando…</td></tr>';
+  document.querySelector("#tablaOdontologo tbody").innerHTML =
+    '<tr><td class="empty-state">Cargando…</td></tr>';
+
   try {
     const data = await Api.get(`/api/citas/reportes?${query.toString()}`, { auth: "admin" });
 
@@ -27,12 +36,12 @@ async function cargarReporte() {
     const filasEstado = Object.entries(data.porEstado);
     document.querySelector("#tablaEstado tbody").innerHTML = filasEstado.length
       ? filasEstado.map(([estado, cantidad]) => `<tr><td>${NOMBRES_ESTADO[estado] || estado}</td><td>${cantidad}</td></tr>`).join("")
-      : '<tr><td class="empty-state">Sin datos en el rango seleccionado.</td></tr>';
+      : `<tr><td class="empty-state">${desde || hasta ? "Sin citas en el rango seleccionado." : "Aun no hay citas registradas."}</td></tr>`;
 
     const filasOdontologo = Object.entries(data.porOdontologo);
     document.querySelector("#tablaOdontologo tbody").innerHTML = filasOdontologo.length
       ? filasOdontologo.map(([nombre, cantidad]) => `<tr><td>${nombre}</td><td>${cantidad}</td></tr>`).join("")
-      : '<tr><td class="empty-state">Sin datos en el rango seleccionado.</td></tr>';
+      : `<tr><td class="empty-state">${desde || hasta ? "Sin citas en el rango seleccionado." : "Aun no hay citas registradas."}</td></tr>`;
   } catch (err) {
     manejarErrorApi(err);
   }

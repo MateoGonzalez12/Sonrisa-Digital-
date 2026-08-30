@@ -35,6 +35,10 @@ const reprogramar = asyncHandler(async (req, res) => {
   res.json(cita);
 });
 
+const listar = asyncHandler(async (req, res) => {
+  res.json(await service.listarCitas({ limite: Number(req.query.limite) || 100 }));
+});
+
 const cancelar = asyncHandler(async (req, res) => {
   const cita = await service.cancelarCita(req.params.id);
   await notificaciones.notificarCambioAlPaciente(cita, "fue cancelada por el consultorio.");
@@ -45,4 +49,5 @@ const confirmar = asyncHandler(async (req, res) => {
   res.json(await service.confirmarCita(req.params.id));
 });
 
-module.exports = { crear, obtener, buscar, agendaGeneral, reportes, reprogramar, cancelar, confirmar };
+module.exports = {
+  listar, crear, obtener, buscar, agendaGeneral, reportes, reprogramar, cancelar, confirmar };

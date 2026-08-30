@@ -48,6 +48,25 @@ async function buscarPacientes(termino) {
 }
 
 // RF-18: historial completo (pasado y futuro) de citas de un paciente por cedula.
+// Listado para la pantalla de pacientes del panel. Se mantiene separado de
+// buscarPacientes porque esa funcion la usa tambien el modulo de citas, donde
+// un termino vacio debe seguir devolviendo cero resultados.
+async function listarPacientes({ limite = 50 } = {}) {
+  const pacientes = await prisma.paciente.findMany({
+    orderBy: { createdAt: "desc" },
+    take: limite,
+    include: { _count: { select: { citas: true } } },
+  });
+
+  return pacientes.map((p) => ({
+    id: p.id,
+    nombre: p.nombre,
+    cedula: p.cedula,
+    telefono: p.telefono,
+    totalCitas: p._count.citas,
+  }));
+}
+
 async function historialPorCedula(cedula) {
   const paciente = await prisma.paciente.findUnique({
     where: { cedula: String(cedula).trim() },
@@ -62,4 +81,5 @@ async function historialPorCedula(cedula) {
   return paciente;
 }
 
-module.exports = { buscarOCrearPaciente, buscarPacientes, historialPorCedula };
+module.exports = {
+  listarPacientes, buscarOCrearPaciente, buscarPacientes, historialPorCedula };

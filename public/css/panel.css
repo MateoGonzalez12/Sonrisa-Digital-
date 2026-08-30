@@ -131,3 +131,11 @@ table.data-table tr:last-child td{border-bottom:none;}
 .appt-card .proc{font-size:12.8px;color:var(--ink-soft);}
 .day-block{margin-bottom:18px;}
 .day-block h4{font-size:13px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+
+/* Avisos de la agenda movil (activar notificaciones / Face ID) */
+.aviso-movil{margin:12px 16px 0;padding:14px;border-radius:14px;background:var(--bg-section);border:1.5px solid var(--gold-soft);display:flex;flex-direction:column;gap:10px;}
+.aviso-movil .aviso-texto{font-size:13.5px;line-height:1.45;color:var(--ink);}
+.aviso-movil .aviso-acciones{display:flex;align-items:center;gap:8px;}
+.aviso-movil .aviso-acciones .btn{flex:1;padding:9px 14px;font-size:13.5px;}
+.aviso-movil .aviso-cerrar{flex:none;width:32px;height:32px;border:none;background:transparent;color:var(--ink-soft);font-size:22px;line-height:1;cursor:pointer;border-radius:50%;}
+.aviso-movil .aviso-cerrar:hover{background:rgba(122,88,52,.08);}

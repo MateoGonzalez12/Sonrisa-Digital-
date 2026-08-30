@@ -6,6 +6,7 @@ const router = Router();
 
 router.post("/", controller.crear);
 router.get("/buscar", requireRol("admin"), controller.buscar);
+router.get("/lista", requireRol("admin"), controller.listar);
 router.get("/agenda-general", requireRol("admin"), controller.agendaGeneral);
 router.get("/reportes", requireRol("admin"), controller.reportes);
 router.get("/:id", requireRol("admin"), controller.obtener);

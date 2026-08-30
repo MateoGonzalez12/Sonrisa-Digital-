@@ -6,13 +6,51 @@ const { formatFechaHora } = require("../../utils/fechas");
 // (sin id de proveedor) y el resto del sistema sigue funcionando; nunca se
 // lanza el error hacia arriba para no tumbar el flujo de citas por una falla
 // externa.
-async function enviarYRegistrar({ telefono, texto, citaId, tipo }) {
+// WhatsApp solo admite texto libre durante las 24 h siguientes al ultimo
+// mensaje del paciente. Se considera abierta la ventana si hay algun mensaje
+// ENTRANTE de ese numero en ese lapso.
+async function dentroDeVentana24h(telefono) {
+  const desde = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const ultimoEntrante = await prisma.mensajeWhatsapp.findFirst({
+    where: { telefono: String(telefono), direccion: "ENTRANTE", createdAt: { gte: desde } },
+    orderBy: { createdAt: "desc" },
+    select: { id: true },
+  });
+  return Boolean(ultimoEntrante);
+}
+
+async function enviarYRegistrar({ telefono, texto, citaId, tipo, plantilla }) {
   let proveedorMessageId = null;
   try {
-    const resultado = await proveedorWhatsapp.enviarMensaje(telefono, texto);
+    // Los mensajes que inicia el consultorio (recordatorio, cambios, alertas)
+    // llevan plantilla cuando la ventana esta cerrada. Las respuestas a un
+    // mensaje del paciente van como texto libre, que permite mas formato.
+    const necesitaPlantilla =
+      Boolean(plantilla) &&
+      proveedorWhatsapp.requierePlantillaFueraDeVentana() &&
+      !(await dentroDeVentana24h(telefono));
+
+    const resultado = necesitaPlantilla
+      ? await proveedorWhatsapp.enviarPlantilla(telefono, { ...plantilla, textoEquivalente: texto })
+      : await proveedorWhatsapp.enviarMensaje(telefono, texto);
+
     proveedorMessageId = resultado.id;
   } catch (err) {
-    console.error(`[whatsapp] Fallo al enviar mensaje (tipo=${tipo}):`, err.message);
+    // Red de seguridad: si Meta rechaza por ventana cerrada (131047) pero el
+    // mensaje si tenia plantilla definida, se reintenta con ella.
+    if (err.requierePlantilla && plantilla) {
+      try {
+        const reintento = await proveedorWhatsapp.enviarPlantilla(telefono, {
+          ...plantilla,
+          textoEquivalente: texto,
+        });
+        proveedorMessageId = reintento.id;
+      } catch (err2) {
+        console.error(`[whatsapp] Fallo tambien con plantilla (tipo=${tipo}):`, err2.message);
+      }
+    } else {
+      console.error(`[whatsapp] Fallo al enviar mensaje (tipo=${tipo}):`, err.message);
+    }
   }
 
   return prisma.mensajeWhatsapp.create({
@@ -43,7 +81,21 @@ async function enviarRecordatorio(cita) {
     `${cita.procedimiento.nombre} el ${formatFechaHora(cita.fechaHora)} en Odontologia Especializada. ` +
     `Responde *CONFIRMAR* o *CANCELAR*.`;
 
-  await enviarYRegistrar({ telefono: cita.paciente.telefono, texto, citaId: cita.id, tipo: "recordatorio" });
+  await enviarYRegistrar({
+    telefono: cita.paciente.telefono,
+    texto,
+    citaId: cita.id,
+    tipo: "recordatorio",
+    plantilla: {
+      nombre: process.env.META_PLANTILLA_RECORDATORIO || "recordatorio_cita",
+      idioma: "es",
+      parametros: [
+        cita.paciente.nombre.split(" ")[0],
+        cita.procedimiento.nombre,
+        formatFechaHora(cita.fechaHora),
+      ],
+    },
+  });
   await prisma.cita.update({ where: { id: cita.id }, data: { recordatorioEnviado: true } });
   return texto;
 }
@@ -52,7 +104,17 @@ async function enviarRecordatorio(cita) {
 async function notificarCambioAlPaciente(cita, mensajeExtra) {
   if (!cita.paciente.telefono) return null;
   const texto = `Hola ${cita.paciente.nombre.split(" ")[0]}, tu cita en Odontologia Especializada ${mensajeExtra}`;
-  return enviarYRegistrar({ telefono: cita.paciente.telefono, texto, citaId: cita.id, tipo: "notificacion_cambio" });
+  return enviarYRegistrar({
+    telefono: cita.paciente.telefono,
+    texto,
+    citaId: cita.id,
+    tipo: "notificacion_cambio",
+    plantilla: {
+      nombre: process.env.META_PLANTILLA_CAMBIO || "cambio_cita",
+      idioma: "es",
+      parametros: [cita.paciente.nombre.split(" ")[0], mensajeExtra],
+    },
+  });
 }
 
 // RF-15: alerta al personal administrativo cuando el paciente cancela.
@@ -62,7 +124,17 @@ async function alertarAdministrativo(cita, motivo) {
   const texto =
     `⚠️ ${motivo}\nPaciente: ${cita.paciente.nombre} (CC ${cita.paciente.cedula})\n` +
     `Procedimiento: ${cita.procedimiento.nombre}\nHorario liberado: ${formatFechaHora(cita.fechaHora)}`;
-  return enviarYRegistrar({ telefono: env.adminWhatsappNumber, texto, citaId: cita.id, tipo: "alerta_admin" });
+  return enviarYRegistrar({
+    telefono: env.adminWhatsappNumber,
+    texto,
+    citaId: cita.id,
+    tipo: "alerta_admin",
+    plantilla: {
+      nombre: process.env.META_PLANTILLA_ALERTA || "alerta_consultorio",
+      idioma: "es",
+      parametros: [motivo, cita.paciente.nombre, formatFechaHora(cita.fechaHora)],
+    },
+  });
 }
 
 // Confirmación de la cita agendada por el cliente 

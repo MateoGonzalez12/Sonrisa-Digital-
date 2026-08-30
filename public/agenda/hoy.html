@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agenda de hoy · Sonrisa Digital</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#D2C4B7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mi Agenda">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
 <link rel="stylesheet" href="/css/styles.css">
 <link rel="stylesheet" href="/css/panel.css">
 </head>
@@ -21,13 +28,32 @@
       <a class="mobile-tab active" href="/agenda/hoy.html">Hoy</a>
       <a class="mobile-tab" href="/agenda/semana.html">Semana</a>
     </div>
+    <div id="avisoMovil" class="aviso-movil" style="display:none;">
+      <div class="aviso-texto" id="avisoTexto"></div>
+      <div class="aviso-acciones">
+        <button type="button" class="btn btn-primary" id="avisoAccion"></button>
+        <button type="button" class="aviso-cerrar" id="avisoCerrar" title="Ocultar">&times;</button>
+      </div>
+    </div>
+
+    <div id="avisoBiometria" class="aviso-movil" style="display:none;">
+      <div class="aviso-texto" id="bioTexto"></div>
+      <div class="aviso-acciones">
+        <button type="button" class="btn btn-primary" id="bioAccion"></button>
+        <button type="button" class="aviso-cerrar" id="bioCerrar" title="Ocultar">&times;</button>
+      </div>
+    </div>
+
     <div class="mobile-body" id="listaHoy">
       <div class="empty-state">Cargando…</div>
     </div>
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/agenda/pwa.js"></script>
   <script src="/js/agenda/common.js"></script>
   <script src="/js/agenda/hoy.js"></script>
+  <script src="/js/agenda/notificaciones-ui.js"></script>
+  <script src="/js/agenda/biometria-ui.js"></script>
 </body>
 </html>

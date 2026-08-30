@@ -41,13 +41,13 @@ model Paciente {
 }
 
 model Procedimiento {
-  id           Int      @id @default(autoincrement())
-  nombre       String
-  descripcion  String?
-  duracionMin  Int      @default(30)
-  precio       Decimal? @db.Decimal(10, 2)
-  activo       Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  descripcion String?
+  duracionMin Int      @default(30)
+  precio      Decimal? @db.Decimal(10, 2)
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
 
   citas Cita[]
 
@@ -62,9 +62,11 @@ model Odontologo {
   activo    Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  horarios HorarioOdontologo[]
-  bloqueos BloqueoHorario[]
-  citas    Cita[]
+  horarios      HorarioOdontologo[]
+  bloqueos      BloqueoHorario[]
+  citas         Cita[]
+  credenciales  CredencialWebAuthn[]
+  suscripciones SuscripcionPush[]
 
   @@map("odontologos")
 }
@@ -82,12 +84,12 @@ model HorarioOdontologo {
 }
 
 model BloqueoHorario {
-  id           Int       @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   odontologoId Int?
   inicio       DateTime
   fin          DateTime
   motivo       String?
-  createdAt    DateTime  @default(now())
+  createdAt    DateTime @default(now())
 
   odontologo Odontologo? @relation(fields: [odontologoId], references: [id], onDelete: Cascade)
 
@@ -95,21 +97,21 @@ model BloqueoHorario {
 }
 
 model Cita {
-  id              Int        @id @default(autoincrement())
-  pacienteId      Int
-  odontologoId    Int
-  procedimientoId Int
-  fechaHora       DateTime
-  estado          EstadoCita @default(PENDIENTE)
-  origen          String     @default("chatbot") // chatbot | admin
-  notasAdmin      String?
-  recordatorioEnviado Boolean @default(false) // evita duplicar el recordatorio (KAN-41)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id                  Int        @id @default(autoincrement())
+  pacienteId          Int
+  odontologoId        Int
+  procedimientoId     Int
+  fechaHora           DateTime
+  estado              EstadoCita @default(PENDIENTE)
+  origen              String     @default("chatbot") // chatbot | admin
+  notasAdmin          String?
+  recordatorioEnviado Boolean    @default(false) // evita duplicar el recordatorio (KAN-41)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
-  paciente      Paciente      @relation(fields: [pacienteId], references: [id])
-  odontologo    Odontologo    @relation(fields: [odontologoId], references: [id])
-  procedimiento Procedimiento @relation(fields: [procedimientoId], references: [id])
+  paciente      Paciente          @relation(fields: [pacienteId], references: [id])
+  odontologo    Odontologo        @relation(fields: [odontologoId], references: [id])
+  procedimiento Procedimiento     @relation(fields: [procedimientoId], references: [id])
   mensajes      MensajeWhatsapp[]
 
   // Evita doble reserva del mismo odontologo en el mismo instante (RF-02 / KAN-35)
@@ -118,14 +120,14 @@ model Cita {
 }
 
 model MensajeWhatsapp {
-  id                  Int               @id @default(autoincrement())
-  citaId              Int?
-  telefono            String
-  direccion           DireccionMensaje
-  tipo                String // recordatorio | confirmacion | cancelacion | alerta_admin | notificacion_cambio | chatbot
-  contenido           String
-  proveedorMessageId  String?
-  createdAt           DateTime          @default(now())
+  id                 Int              @id @default(autoincrement())
+  citaId             Int?
+  telefono           String
+  direccion          DireccionMensaje
+  tipo               String // recordatorio | confirmacion | cancelacion | alerta_admin | notificacion_cambio | chatbot
+  contenido          String
+  proveedorMessageId String?
+  createdAt          DateTime         @default(now())
 
   cita Cita? @relation(fields: [citaId], references: [id])
 
@@ -145,12 +147,50 @@ model AdminUser {
 // Guarda el estado de cada conversacion del chatbot para poder continuar
 // la conversacion entre mensajes sin perder contexto (RF-07/RF-08).
 model ConversacionChatbot {
-  id         String   @id @default(uuid())
-  canal      String   @default("web") // web | whatsapp
-  telefono   String?
-  estado     Json
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(uuid())
+  canal     String   @default("web") // web | whatsapp
+  telefono  String?
+  estado    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("conversaciones_chatbot")
+}
+
+// Credencial biometrica (Face ID / Touch ID) registrada por un miembro del
+// staff. La clave privada NUNCA sale del dispositivo: aqui solo se guarda la
+// clave publica con la que el servidor verifica la firma (RF-26 / RNF-05).
+model CredencialWebAuthn {
+  id           Int       @id @default(autoincrement())
+  odontologoId Int
+  credentialId String    @unique // identificador que devuelve el dispositivo (base64url)
+  publicKey    Bytes
+  counter      Int       @default(0) // contador antirreplay; los passkeys de Apple lo dejan en 0
+  transports   String? // "internal", "hybrid", ... separados por coma
+  apodo        String? // ej. "iPhone de la Dra. Lyda"
+  createdAt    DateTime  @default(now())
+  ultimoUso    DateTime?
+
+  odontologo Odontologo @relation(fields: [odontologoId], references: [id], onDelete: Cascade)
+
+  @@index([odontologoId])
+  @@map("credenciales_webauthn")
+}
+
+// Dispositivo suscrito a notificaciones push. Cada acceso directo instalado
+// genera un endpoint distinto, por eso un mismo odontologo puede tener varios.
+model SuscripcionPush {
+  id           Int       @id @default(autoincrement())
+  odontologoId Int
+  endpoint     String    @unique @db.Text
+  p256dh       String
+  auth         String
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+  ultimoEnvio  DateTime?
+
+  odontologo Odontologo @relation(fields: [odontologoId], references: [id], onDelete: Cascade)
+
+  @@index([odontologoId])
+  @@map("suscripciones_push")
 }

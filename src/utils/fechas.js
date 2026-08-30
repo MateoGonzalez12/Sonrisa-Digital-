@@ -88,7 +88,11 @@ function extraerFecha(textoOriginal, referencia = new Date()) {
     d.setHours(0, 0, 0, 0);
     return d;
   }
-  if (/\bmanana\b/.test(texto)) {
+  // "manana" es ambiguo en espanol: puede ser el dia siguiente ("manana a las
+  // 3") o la franja horaria ("el lunes por la manana"). Cuando viene precedido
+  // de "por la / de la / en la" se refiere a la franja, no al dia, y no debe
+  // interpretarse como el dia siguiente.
+  if (/\bmanana\b/.test(texto) && !/(?:por|de|en)\s+la\s+manana/.test(texto)) {
     const d = new Date(referencia);
     d.setDate(d.getDate() + 1);
     d.setHours(0, 0, 0, 0);

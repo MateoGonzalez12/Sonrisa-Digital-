@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Acceso agenda móvil · Sonrisa Digital</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#D2C4B7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mi Agenda">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
 <link rel="stylesheet" href="/css/styles.css">
 <link rel="stylesheet" href="/css/panel.css">
 </head>
@@ -27,6 +34,10 @@
       </div>
 
       <button type="submit" class="btn btn-primary btn-block" id="submitBtn" disabled>Ingresar</button>
+
+      <button type="button" class="btn btn-block" id="btnFaceId" style="display:none;margin-top:10px;">
+        <span id="btnFaceIdTexto">Entrar con Face ID</span>
+      </button>
       <p style="text-align:center;font-size:12.5px;color:var(--ink-soft);margin-top:16px;">
         <a href="/index.html">← Volver al sitio</a> &nbsp;·&nbsp; <a href="/admin/login.html">Soy administrativo</a>
       </p>
@@ -34,6 +45,7 @@
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/agenda/pwa.js"></script>
   <script src="/js/agenda/login.js"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 const prisma = require("../../db/prisma");
 const { clasificarIntencion } = require("./nlp/clasificador");
 const { extraerEntidades, extraerProcedimiento } = require("./nlp/entidades");
-const { formatFechaHora } = require("../../utils/fechas");
+const { formatFechaHora, formatFecha } = require("../../utils/fechas");
 const conversaciones = require("./conversacion.store");
 const procedimientosService = require("../procedimientos/procedimientos.service");
 const citasService = require("../citas/citas.service");
@@ -24,8 +24,22 @@ function limpiarCedula(valor) {
   return String(valor || "").replace(/\D/g, "");
 }
 
+// El catalogo de procedimientos se consulta en casi todos los pasos de la
+// conversacion, pero cambia muy rara vez (lo edita el admin de vez en cuando).
+// Guardarlo un minuto evita una consulta remota por mensaje sin que el chatbot
+// llegue a mostrar informacion desactualizada de forma perceptible.
+let catalogoEnCache = null;
+let catalogoExpira = 0;
+const VIGENCIA_CATALOGO_MS = 60 * 1000;
+
 async function opcionesProcedimientos() {
+  if (catalogoEnCache && catalogoExpira > Date.now()) {
+    return { catalogo: catalogoEnCache, opciones: catalogoEnCache.map((p) => p.nombre) };
+  }
+
   const catalogo = await procedimientosService.listar({ soloActivos: true });
+  catalogoEnCache = catalogo;
+  catalogoExpira = Date.now() + VIGENCIA_CATALOGO_MS;
   return { catalogo, opciones: catalogo.map((p) => p.nombre) };
 }
 
@@ -168,16 +182,79 @@ async function pasoAgendarProcedimiento(estado, mensaje) {
 }
 
 async function pasoAgendarFechaHora(estado, mensaje) {
-  const { fechaHora } = extraerEntidades(mensaje);
-  if (!fechaHora) {
+  const { fecha, hora } = extraerEntidades(mensaje);
+
+  // El paciente rara vez da dia y hora en el mismo mensaje: escribe "el
+  // viernes" o "a las 3". Antes se descartaba el dato incompleto y el bot
+  // repetia la misma pregunta indefinidamente. Ahora se recuerda la mitad que
+  // ya dio y solo se pregunta por la que falta.
+  const fechaPrevia = estado.datos.fechaParcial ? new Date(estado.datos.fechaParcial) : null;
+  const horaPrevia = estado.datos.horaParcial || null;
+
+  const fechaFinal = fecha || fechaPrevia;
+  const horaFinal = hora || horaPrevia;
+
+  if (!fechaFinal && !horaFinal) {
     return {
       estado,
-      respuestas: [texto('No logre identificar la fecha/hora. Intenta con algo como "jueves 3:00 p.m." o "20 de agosto 10am".')],
+      respuestas: [
+        texto('No logre identificar la fecha/hora. Intenta con algo como "jueves 3:00 p.m." o "20 de agosto 10am".'),
+      ],
     };
   }
 
-  const procedimiento = await prisma.procedimiento.findUnique({ where: { id: estado.datos.procedimientoId } });
-  const odontologo = await citasService.obtenerOdontologoPorDefecto();
+  if (!horaFinal) {
+    estado.datos.fechaParcial = fechaFinal.toISOString();
+    return {
+      estado,
+      respuestas: [
+        texto(`Perfecto, ${formatFecha(fechaFinal)}. ¿A que *hora* te viene bien?`, [
+          "8:00 a.m.",
+          "10:00 a.m.",
+          "2:00 p.m.",
+          "4:00 p.m.",
+        ]),
+      ],
+    };
+  }
+
+  if (!fechaFinal) {
+    estado.datos.horaParcial = horaFinal;
+    return {
+      estado,
+      respuestas: [
+        texto(`Anotada la hora. ¿Que *dia* prefieres? (ej: "manana", "el viernes", "20 de septiembre")`),
+      ],
+    };
+  }
+
+  const fechaHora = new Date(fechaFinal);
+  fechaHora.setHours(horaFinal.horas, horaFinal.minutos, 0, 0);
+
+  // Ya se armo la fecha completa: se limpian las mitades guardadas para que un
+  // cambio posterior del paciente no arrastre datos viejos.
+  estado.datos.fechaParcial = null;
+  estado.datos.horaParcial = null;
+
+  if (fechaHora.getTime() < Date.now()) {
+    return {
+      estado,
+      respuestas: [texto("Esa fecha y hora ya pasaron 😅. ¿Me indicas un dia y una hora a futuro?")],
+    };
+  }
+
+  // El procedimiento ya esta en el catalogo cacheado; se busca ahi en vez de
+  // pedirlo otra vez a la base. El odontologo se consulta en paralelo porque
+  // las dos cosas son independientes entre si.
+  const [{ catalogo }, odontologo] = await Promise.all([
+    opcionesProcedimientos(),
+    citasService.obtenerOdontologoPorDefecto(),
+  ]);
+
+  const procedimiento =
+    catalogo.find((p) => p.id === estado.datos.procedimientoId) ||
+    (await prisma.procedimiento.findUnique({ where: { id: estado.datos.procedimientoId } }));
+
   const libre = await estaDisponible(odontologo.id, fechaHora, procedimiento.duracionMin);
 
   if (!libre) {
@@ -449,4 +526,10 @@ async function iniciarConversacion(canal = "web") {
   return { conversacionId: conversacion.id, respuestas: [menuInicial(true)] };
 }
 
-module.exports = { procesarMensaje, iniciarConversacion };
+// Se llama al arrancar el servidor para que el primer paciente del dia no
+// pague la primera consulta del catalogo.
+async function precargarCatalogo() {
+  return opcionesProcedimientos();
+}
+
+module.exports = { procesarMensaje, iniciarConversacion, precargarCatalogo };

@@ -2,7 +2,17 @@ const prisma = require("../../db/prisma");
 const { AppError } = require("../../middlewares/errorHandler");
 const { estaDisponible, sugerirAlternativas } = require("./disponibilidad.service");
 const pacientesService = require("../pacientes/pacientes.service");
+const pushService = require("../notificaciones/push/push.service");
 const { inicioDelDia, finDelDia, inicioDeLaSemana } = require("../../utils/fechas");
+
+// El aviso al celular del staff no debe poder tumbar la operacion principal:
+// si el servicio de push falla, la cita igual queda agendada. Por eso se
+// dispara sin esperar y con el error contenido (RNF-07).
+function avisarEnSegundoPlano(promesa) {
+  Promise.resolve(promesa).catch((err) =>
+    console.error("[push] no se pudo notificar al staff:", err.message)
+  );
+}
 
 const INCLUYE_DETALLE = {
   paciente: true,
@@ -66,6 +76,8 @@ async function crearCita({ nombre, cedula, telefono, procedimientoId, fechaHora,
     include: INCLUYE_DETALLE,
   });
 
+  avisarEnSegundoPlano(pushService.avisarCitaNueva(cita));
+
   return cita;
 }
 
@@ -101,18 +113,31 @@ async function reprogramarCita(id, nuevaFechaHora) {
     throw error;
   }
 
-  return prisma.cita.update({
+  const reprogramada = await prisma.cita.update({
     where: { id: cita.id },
     data: { fechaHora: fecha, estado: "PENDIENTE" },
     include: INCLUYE_DETALLE,
   });
+
+  avisarEnSegundoPlano(pushService.avisarCitaReprogramada(reprogramada));
+
+  return reprogramada;
 }
 
 // Cancela y libera el horario .
 async function cancelarCita(id) {
   const cita = await obtenerCita(id);
   if (cita.estado === "CANCELADA") return cita;
-  return prisma.cita.update({ where: { id: cita.id }, data: { estado: "CANCELADA" }, include: INCLUYE_DETALLE });
+
+  const cancelada = await prisma.cita.update({
+    where: { id: cita.id },
+    data: { estado: "CANCELADA" },
+    include: INCLUYE_DETALLE,
+  });
+
+  avisarEnSegundoPlano(pushService.avisarCitaCancelada(cancelada));
+
+  return cancelada;
 }
 
 // confirma la cita (respuesta del paciente por WhatsApp o chat).
@@ -126,6 +151,31 @@ async function confirmarCita(id) {
 async function marcarEstado(id, estado) {
   const cita = await obtenerCita(id);
   return prisma.cita.update({ where: { id: cita.id }, data: { estado }, include: INCLUYE_DETALLE });
+}
+
+// Listado general para el panel: las citas mas proximas primero y luego las
+// pasadas. Se usa como estado inicial de la pantalla de citas, porque filtrar
+// solo por el dia de hoy dejaba la tabla vacia cuando no habia citas hoy, y
+// parecia que el sistema no tenia datos.
+async function listarCitas({ limite = 100 } = {}) {
+  const ahora = new Date();
+
+  const [proximas, pasadas] = await Promise.all([
+    prisma.cita.findMany({
+      where: { fechaHora: { gte: ahora } },
+      include: INCLUYE_DETALLE,
+      orderBy: { fechaHora: "asc" },
+      take: limite,
+    }),
+    prisma.cita.findMany({
+      where: { fechaHora: { lt: ahora } },
+      include: INCLUYE_DETALLE,
+      orderBy: { fechaHora: "desc" },
+      take: limite,
+    }),
+  ]);
+
+  return [...proximas, ...pasadas].slice(0, limite);
 }
 
 // busca citas por nombre o cedula del paciente.
@@ -214,6 +264,7 @@ async function reporteBasico({ desde, hasta } = {}) {
 }
 
 module.exports = {
+  listarCitas,
   crearCita,
   obtenerCita,
   reprogramarCita,

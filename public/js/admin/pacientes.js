@@ -42,7 +42,50 @@ async function buscarHistorial() {
   }
 }
 
+// La pantalla arrancaba en blanco pidiendo una cedula, lo que se leia como
+// "no hay pacientes". Ahora muestra el listado y se abre el historial con un
+// clic, sin tener que saber la cedula de memoria.
+async function cargarListado() {
+  const contenedor = document.getElementById("listadoPacientes");
+  if (!contenedor) return;
+  contenedor.innerHTML = '<div class="empty-state">Cargando pacientes…</div>';
+  try {
+    const pacientes = await Api.get("/api/pacientes/lista", { auth: "admin" });
+    if (!pacientes.length) {
+      contenedor.innerHTML = '<div class="empty-state">Aun no hay pacientes registrados.</div>';
+      return;
+    }
+    contenedor.innerHTML = `
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Paciente</th><th>Cédula</th><th>Teléfono</th><th>Citas</th></tr></thead>
+          <tbody>
+            ${pacientes
+              .map(
+                (p) => `<tr style="cursor:pointer" onclick="verHistorialDe('${p.cedula}')">
+                  <td>${p.nombre}</td>
+                  <td>${p.cedula}</td>
+                  <td>${p.telefono || "—"}</td>
+                  <td>${p.totalCitas}</td>
+                </tr>`
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>`;
+  } catch (err) {
+    manejarErrorApi(err);
+  }
+}
+
+function verHistorialDe(cedula) {
+  document.getElementById("cedulaInput").value = cedula;
+  buscarHistorial();
+}
+
 document.getElementById("btnBuscar").onclick = buscarHistorial;
 document.getElementById("cedulaInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") buscarHistorial();
 });
+
+cargarListado();

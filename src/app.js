@@ -4,7 +4,9 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 
+const env = require("./config/env");
 const { notFoundHandler, errorHandler } = require("./middlewares/errorHandler");
+const { apiLimiter } = require("./middlewares/rateLimit");
 
 // Rutas de cada modulo (RNF-04: arquitectura modular - un router por dominio,
 // montado de forma independiente; se puede quitar/reemplazar un modulo sin
@@ -21,18 +23,27 @@ const agendaMovilRoutes = require("./modules/agendaMovil/agendaMovil.routes");
 
 const app = express();
 
+// En Render/Railway la app corre detras de un proxy inverso. Sin esto,
+// req.ip seria siempre la IP del proxy y el limitador de intentos trataria a
+// todos los usuarios como uno solo (RNF-05).
+if (env.trustProxy) {
+  app.set("trust proxy", 1);
+}
+
 app.use(
   helmet({
     // Permite que la pagina publica cargue el embed de Google Maps (iframe)
     contentSecurityPolicy: false,
   })
 );
-app.use(cors());
+app.use(cors({ origin: env.corsOrigin, credentials: true }));
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // Twilio envia el webhook como form-urlencoded
 
 app.get("/api/salud", (req, res) => res.json({ ok: true, servicio: "sonrisa-digital-api" }));
+
+app.use("/api", apiLimiter);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/pacientes", pacientesRoutes);

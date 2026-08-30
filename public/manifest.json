@@ -1,0 +1,52 @@
+{
+  "name": "Agenda Sonrisa Digital",
+  "short_name": "Mi Agenda",
+  "description": "Agenda movil del equipo odontologico - Dra. Lyda P. Gonzalez Angulo",
+  "lang": "es-CO",
+  "dir": "ltr",
+  "start_url": "/agenda/hoy.html",
+  "scope": "/agenda/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#D2C4B7",
+  "theme_color": "#D2C4B7",
+  "categories": ["medical", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Agenda de hoy",
+      "url": "/agenda/hoy.html",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Agenda de la semana",
+      "url": "/agenda/semana.html",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
