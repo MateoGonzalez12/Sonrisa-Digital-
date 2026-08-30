@@ -6,6 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "nodemon src/server.js",
+    "build": "prisma generate && prisma migrate deploy",
     "start": "node src/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -35,5 +36,8 @@
   },
   "prisma": {
     "seed": "node prisma/seed.js"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
