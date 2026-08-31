@@ -48,6 +48,18 @@ const Movil = (function () {
 
   /* ---------- service worker ---------- */
 
+  // El registro arranca al cargar la pagina y tarda unos milisegundos. Como
+  // estadoNotificaciones() y activarNotificaciones() se ejecutan enseguida,
+  // preguntarle a getRegistration() sin esperar devolvia undefined y la agenda
+  // creia que no habia service worker. Se guarda la promesa y todos esperan la
+  // misma.
+  let registroEnCurso = null;
+
+  function serviceWorkerListo() {
+    if (!registroEnCurso) registroEnCurso = registrarServiceWorker();
+    return registroEnCurso;
+  }
+
   async function registrarServiceWorker() {
     if (!("serviceWorker" in navigator)) return null;
     try {
@@ -75,7 +87,7 @@ const Movil = (function () {
     if (esIOS() && !estaInstalada()) return "requiere-instalacion";
     if (Notification.permission === "denied") return "bloqueado";
 
-    const registro = await navigator.serviceWorker.getRegistration();
+    const registro = (await serviceWorkerListo()) || (await navigator.serviceWorker.getRegistration());
     const suscripcion = registro && (await registro.pushManager.getSubscription());
     return suscripcion ? "activo" : "inactivo";
   }
@@ -95,7 +107,7 @@ const Movil = (function () {
       throw new Error("No se concedio el permiso de notificaciones.");
     }
 
-    const registro = (await navigator.serviceWorker.getRegistration()) || (await registrarServiceWorker());
+    const registro = (await serviceWorkerListo()) || (await navigator.serviceWorker.getRegistration());
     if (!registro) throw new Error("No se pudo preparar el servicio de notificaciones.");
     await navigator.serviceWorker.ready;
 
@@ -114,7 +126,7 @@ const Movil = (function () {
   }
 
   async function desactivarNotificaciones() {
-    const registro = await navigator.serviceWorker.getRegistration();
+    const registro = (await serviceWorkerListo()) || (await navigator.serviceWorker.getRegistration());
     const suscripcion = registro && (await registro.pushManager.getSubscription());
     if (!suscripcion) return true;
 
@@ -142,6 +154,26 @@ const Movil = (function () {
     }
   }
 
+  // WebAuthn lanza errores muy cripticos y el mas comun en un despliegue nuevo
+  // (SecurityError) no tiene nada que ver con el sensor: es que el dominio o el
+  // HTTPS no cuadran. Traducirlos evita perder horas mirando el lugar
+  // equivocado.
+  function errorBiometriaLegible(err) {
+    if (err && err.name === "SecurityError") {
+      return new Error(
+        "El dominio de la pagina no coincide con el configurado para Face ID. " +
+          "Revisa WEBAUTHN_RP_ID/WEBAUTHN_ORIGIN en el servidor, o que estes entrando por HTTPS."
+      );
+    }
+    if (err && err.name === "InvalidStateError") {
+      return new Error("Este dispositivo ya tiene Face ID registrado para este usuario.");
+    }
+    if (err && err.name === "NotSupportedError") {
+      return new Error("Este dispositivo no admite Face ID / huella para iniciar sesion.");
+    }
+    return err;
+  }
+
   // Registro: la persona ya inicio sesion con su PIN.
   async function registrarBiometria(apodo) {
     const opciones = await Api.post("/api/auth/staff/webauthn/registro/opciones", {}, { auth: "staff" });
@@ -155,7 +187,12 @@ const Movil = (function () {
       }));
     }
 
-    const credencial = await navigator.credentials.create({ publicKey: opciones });
+    let credencial;
+    try {
+      credencial = await navigator.credentials.create({ publicKey: opciones });
+    } catch (err) {
+      throw errorBiometriaLegible(err);
+    }
     if (!credencial) throw new Error("No se creo la credencial biometrica.");
 
     const respuesta = {
@@ -189,7 +226,12 @@ const Movil = (function () {
       }));
     }
 
-    const credencial = await navigator.credentials.get({ publicKey: opciones });
+    let credencial;
+    try {
+      credencial = await navigator.credentials.get({ publicKey: opciones });
+    } catch (err) {
+      throw errorBiometriaLegible(err);
+    }
     if (!credencial) throw new Error("No se completo la verificacion biometrica.");
 
     const respuesta = {
@@ -230,7 +272,7 @@ const Movil = (function () {
     return { manual: false, aceptado: resultado.outcome === "accepted" };
   }
 
-  registrarServiceWorker();
+  serviceWorkerListo();
 
   return {
     esIOS,

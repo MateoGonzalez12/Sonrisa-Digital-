@@ -7,7 +7,7 @@ const { firmarToken } = require("../auth.service");
 // ahi activa el Face ID; asi se garantiza que quien registra la cara es quien
 // realmente conoce el PIN.
 const opcionesRegistro = asyncHandler(async (req, res) => {
-  res.json(await service.opcionesDeRegistro(req.usuario.id));
+  res.json(await service.opcionesDeRegistro(req.usuario.id, req));
 });
 
 const verificarRegistro = asyncHandler(async (req, res) => {
@@ -20,7 +20,7 @@ const verificarRegistro = asyncHandler(async (req, res) => {
 const opcionesLogin = asyncHandler(async (req, res) => {
   const odontologoId = Number(req.body.odontologoId);
   if (!odontologoId) throw new AppError("Selecciona tu nombre", 400);
-  res.json(await service.opcionesDeLogin(odontologoId));
+  res.json(await service.opcionesDeLogin(odontologoId, req));
 });
 
 const verificarLogin = asyncHandler(async (req, res) => {

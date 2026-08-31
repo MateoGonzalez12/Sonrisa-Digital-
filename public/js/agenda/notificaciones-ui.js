@@ -77,11 +77,25 @@
       accion.textContent = "Activando…";
       try {
         await Movil.activarNotificaciones();
+      } catch (err) {
+        mostrar(err.message || "No se pudieron activar las notificaciones.", null);
+        accion.disabled = false;
+        return;
+      }
+
+      // La suscripcion ya quedo guardada. Si la prueba falla el problema esta en
+      // el servidor (claves VAPID) o en el envio, no en el permiso: hay que
+      // decirlo tal cual en vez de afirmar que llego una notificacion.
+      try {
         await Movil.probarNotificacion();
         mostrar("Listo. Te acabamos de enviar una notificación de prueba.", null);
         setTimeout(ocultar, 6000);
       } catch (err) {
-        mostrar(err.message || "No se pudieron activar las notificaciones.", null);
+        mostrar(
+          "Las notificaciones quedaron activadas, pero la prueba no se pudo enviar: " +
+            (err.message || "error desconocido"),
+          null
+        );
       } finally {
         accion.disabled = false;
       }

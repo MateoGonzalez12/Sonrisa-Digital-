@@ -17,23 +17,63 @@ const { AppError } = require("../../../middlewares/errorHandler");
 // que se pueda robar desde la base de datos.
 //
 // La credencial queda atada al dominio (rpId): una registrada en localhost no
-// sirve en produccion. Al publicar hay que fijar WEBAUTHN_RP_ID y no cambiarlo.
+// sirve en produccion, y al revés tampoco. Si el dominio cambia, cada persona
+// tiene que volver a activar Face ID una vez.
+
+// El rpId y el origin DEBEN coincidir con el dominio desde el que el navegador
+// hace la peticion. Si no coinciden, el celular rechaza la operacion antes de
+// mostrar Face ID (SecurityError: "The relying party ID is not a registrable
+// domain suffix of, nor equal to the current domain").
+//
+// Por eso, cuando WEBAUTHN_RP_ID no esta configurado explicitamente, se derivan
+// del propio request en lugar de caer al "localhost" por defecto: asi la
+// biometria funciona en el dominio de despliegue sin tener que recordar poner
+// dos variables de entorno. Configurar WEBAUTHN_RP_ID sigue teniendo prioridad
+// y es lo recomendable en un dominio propio y definitivo.
+function contextoDeDominio(req) {
+  if (env.webauthn.rpIdExplicito) {
+    return { rpId: env.webauthn.rpId, origin: env.webauthn.origin };
+  }
+
+  // El navegador envia Origin en toda peticion POST, incluso same-origin.
+  const origenPeticion = req && req.get && req.get("origin");
+  if (origenPeticion) {
+    try {
+      return { rpId: new URL(origenPeticion).hostname, origin: origenPeticion };
+    } catch (e) {
+      /* Origin malformado: se sigue con el Host */
+    }
+  }
+
+  const host = req && req.get && req.get("host");
+  if (host) {
+    // Detras del proxy de Render la conexion interna es HTTP; el protocolo real
+    // que vio el navegador viene en X-Forwarded-Proto.
+    const protocolo = (req.get("x-forwarded-proto") || req.protocol || "https").split(",")[0].trim();
+    return { rpId: host.split(":")[0], origin: `${protocolo}://${host}` };
+  }
+
+  return { rpId: env.webauthn.rpId, origin: env.webauthn.origin };
+}
 
 // Los retos (challenge) son de un solo uso y viven segundos. Se guardan en
 // memoria porque persistirlos en la base no aporta: si el servidor se reinicia
 // en mitad del registro, el usuario simplemente vuelve a intentarlo.
+//
+// Junto al reto se guarda el dominio con el que se genero: la verificacion debe
+// comprobarse contra ese mismo valor y no contra uno recalculado.
 const retos = new Map();
 const VIGENCIA_RETO_MS = 2 * 60 * 1000;
 
-function guardarReto(clave, challenge) {
-  retos.set(clave, { challenge, expira: Date.now() + VIGENCIA_RETO_MS });
+function guardarReto(clave, challenge, contexto) {
+  retos.set(clave, { challenge, contexto, expira: Date.now() + VIGENCIA_RETO_MS });
 }
 
 function tomarReto(clave) {
   const guardado = retos.get(clave);
   retos.delete(clave); // un reto solo se puede usar una vez
   if (!guardado || guardado.expira < Date.now()) return null;
-  return guardado.challenge;
+  return guardado;
 }
 
 // Limpieza periodica para que el Map no crezca indefinidamente.
@@ -50,7 +90,8 @@ function aBase64Url(buffer) {
 
 /* ---------------- Registro de la credencial ---------------- */
 
-async function opcionesDeRegistro(odontologoId) {
+async function opcionesDeRegistro(odontologoId, req) {
+  const dominio = contextoDeDominio(req);
   const staff = await prisma.odontologo.findUnique({
     where: { id: odontologoId },
     include: { credenciales: true },
@@ -59,7 +100,7 @@ async function opcionesDeRegistro(odontologoId) {
 
   const opciones = await generateRegistrationOptions({
     rpName: env.webauthn.rpName,
-    rpID: env.webauthn.rpId,
+    rpID: dominio.rpId,
     userID: Buffer.from(String(staff.id)),
     userName: staff.nombre,
     userDisplayName: staff.nombre,
@@ -77,21 +118,21 @@ async function opcionesDeRegistro(odontologoId) {
     },
   });
 
-  guardarReto(`reg:${staff.id}`, opciones.challenge);
+  guardarReto(`reg:${staff.id}`, opciones.challenge, dominio);
   return opciones;
 }
 
 async function verificarRegistro(odontologoId, respuesta, apodo) {
-  const challenge = tomarReto(`reg:${odontologoId}`);
-  if (!challenge) throw new AppError("El registro expiro. Intenta de nuevo.", 400);
+  const reto = tomarReto(`reg:${odontologoId}`);
+  if (!reto) throw new AppError("El registro expiro. Intenta de nuevo.", 400);
 
   let verificacion;
   try {
     verificacion = await verifyRegistrationResponse({
       response: respuesta,
-      expectedChallenge: challenge,
-      expectedOrigin: env.webauthn.origin,
-      expectedRPID: env.webauthn.rpId,
+      expectedChallenge: reto.challenge,
+      expectedOrigin: reto.contexto.origin,
+      expectedRPID: reto.contexto.rpId,
       requireUserVerification: true,
     });
   } catch (err) {
@@ -120,7 +161,8 @@ async function verificarRegistro(odontologoId, respuesta, apodo) {
 
 /* ---------------- Inicio de sesion con biometria ---------------- */
 
-async function opcionesDeLogin(odontologoId) {
+async function opcionesDeLogin(odontologoId, req) {
+  const dominio = contextoDeDominio(req);
   const credenciales = await prisma.credencialWebAuthn.findMany({
     where: { odontologoId },
   });
@@ -129,7 +171,7 @@ async function opcionesDeLogin(odontologoId) {
   }
 
   const opciones = await generateAuthenticationOptions({
-    rpID: env.webauthn.rpId,
+    rpID: dominio.rpId,
     allowCredentials: credenciales.map((c) => ({
       id: c.credentialId,
       transports: c.transports ? c.transports.split(",") : undefined,
@@ -137,13 +179,13 @@ async function opcionesDeLogin(odontologoId) {
     userVerification: "required",
   });
 
-  guardarReto(`login:${odontologoId}`, opciones.challenge);
+  guardarReto(`login:${odontologoId}`, opciones.challenge, dominio);
   return opciones;
 }
 
 async function verificarLogin(odontologoId, respuesta) {
-  const challenge = tomarReto(`login:${odontologoId}`);
-  if (!challenge) throw new AppError("El intento expiro. Intenta de nuevo.", 400);
+  const reto = tomarReto(`login:${odontologoId}`);
+  if (!reto) throw new AppError("El intento expiro. Intenta de nuevo.", 400);
 
   const credencial = await prisma.credencialWebAuthn.findUnique({
     where: { credentialId: respuesta.id },
@@ -156,9 +198,9 @@ async function verificarLogin(odontologoId, respuesta) {
   try {
     verificacion = await verifyAuthenticationResponse({
       response: respuesta,
-      expectedChallenge: challenge,
-      expectedOrigin: env.webauthn.origin,
-      expectedRPID: env.webauthn.rpId,
+      expectedChallenge: reto.challenge,
+      expectedOrigin: reto.contexto.origin,
+      expectedRPID: reto.contexto.rpId,
       requireUserVerification: true,
       credential: {
         id: credencial.credentialId,

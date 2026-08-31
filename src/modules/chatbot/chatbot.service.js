@@ -1,7 +1,7 @@
 const prisma = require("../../db/prisma");
 const { clasificarIntencion } = require("./nlp/clasificador");
 const { extraerEntidades, extraerProcedimiento } = require("./nlp/entidades");
-const { formatFechaHora, formatFecha } = require("../../utils/fechas");
+const { formatFechaHora, formatFecha, quitarTildes } = require("../../utils/fechas");
 const conversaciones = require("./conversacion.store");
 const procedimientosService = require("../procedimientos/procedimientos.service");
 const citasService = require("../citas/citas.service");
@@ -43,15 +43,49 @@ async function opcionesProcedimientos() {
   return { catalogo, opciones: catalogo.map((p) => p.nombre) };
 }
 
+function lineaProcedimiento(p) {
+  const precio = p.precio ? ` \u2014 desde $${Number(p.precio).toLocaleString("es-CO")}` : "";
+  return `\u2022 *${p.nombre}* (${p.duracionMin} min)${precio}: ${p.descripcion || ""}`;
+}
+
 async function respuestaListaProcedimientos() {
   const { catalogo, opciones } = await opcionesProcedimientos();
-  const detalle = catalogo
-    .map((p) => `• *${p.nombre}* (${p.duracionMin} min)${p.precio ? ` — desde $${Number(p.precio).toLocaleString("es-CO")}` : ""}: ${p.descripcion || ""}`)
-    .join("\n");
+  const detalle = catalogo.map(lineaProcedimiento).join("\n");
   return [
-    texto(`Estos son nuestros procedimientos disponibles:\n\n${detalle}`, [...opciones, "Agendar una cita"]),
+    texto(
+      `Estos son nuestros procedimientos disponibles:\n\n${detalle}\n\nToca el que te interese para ver el detalle, o agenda directamente.`,
+      [...opciones, "Agendar una cita"]
+    ),
   ];
 }
+
+// Detalle de UN procedimiento. Antes, tocar el nombre de un procedimiento en la
+// lista se volvia a clasificar como CONSULTAR_PROCEDIMIENTOS y el bot repetia la
+// lista completa una y otra vez, sin salida. Ahora cada procedimiento tiene su
+// propia respuesta y, sobre todo, sus propias salidas: agendarlo o volver a la
+// lista.
+function respuestaDetalleProcedimiento(procedimiento) {
+  const precio = procedimiento.precio
+    ? `\nInversion: desde *$${Number(procedimiento.precio).toLocaleString("es-CO")}*`
+    : "";
+  const descripcion =
+    procedimiento.descripcion || "Tratamiento realizado por la Dra. Lyda P. Gonzalez Angulo.";
+  return [
+    texto(
+      `*${procedimiento.nombre}*\n${descripcion}\nDuracion aproximada: *${procedimiento.duracionMin} minutos*${precio}`,
+      [`Agendar ${procedimiento.nombre}`, "Ver todos los procedimientos", "Ver mis citas"]
+    ),
+  ];
+}
+
+// Verbos con los que el paciente pide una cita. Se mantienen separados del
+// nombre del procedimiento para poder distinguir "ortodoncia" (quiere
+// informacion) de "agendar ortodoncia" (quiere la cita ya).
+const RE_INTENCION_AGENDAR = /\b(agendar|agendame|agendarme|agenda|reservar|separar|programar|reagendar|sacar|pedir)\b/;
+// Peticion del catalogo completo. Se evalua antes de buscar un procedimiento
+// concreto para que "consultar procedimientos" no se confunda con el nombre de
+// alguno de ellos.
+const RE_VOLVER_A_LISTA = /(ver todos|todos los procedimientos|otros procedimientos|otro procedimiento|ver la lista|volver a la lista|consultar procedimientos|ver procedimientos|que procedimientos|lista de procedimientos)/;
 
 // tras N intentos sin entender al paciente, deriva a un humano y da un
 // mensaje claro, sin dejar la conversacion bloqueada.
@@ -91,7 +125,47 @@ async function manejarAmbiguo(estado) {
 // ---------------------------------------------------------------------------
 // ESPERANDO_INTENCION 
 // ---------------------------------------------------------------------------
+// Arranca el flujo de agenda. Si el paciente ya dijo que procedimiento quiere
+// (por ejemplo pulsando "Agendar Ortodoncia"), se guarda aqui y mas adelante se
+// omite la pregunta: volver a preguntarselo se sentia como que el bot no habia
+// escuchado.
+function iniciarAgendamiento(estado, procedimiento) {
+  estado.paso = "AGENDAR_NOMBRE";
+  estado.intentosFallidos = 0;
+  estado.datos.procedimientoId = procedimiento ? procedimiento.id : null;
+  const encabezado = procedimiento
+    ? `Perfecto, agendamos tu *${procedimiento.nombre}*. ✍️ `
+    : "Perfecto ✍️ ";
+  return { estado, respuestas: [texto(`${encabezado}¿Cual es tu nombre completo?`)] };
+}
+
 async function pasoEsperandoIntencion(estado, mensaje) {
+  const normalizado = quitarTildes(String(mensaje || "")).trim();
+  const { catalogo } = await opcionesProcedimientos();
+  const procedimientoMencionado = extraerProcedimiento(mensaje, catalogo);
+
+  // Salida explicita hacia el catalogo completo (incluye el boton "Ver todos
+  // los procedimientos" del detalle).
+  if (RE_VOLVER_A_LISTA.test(normalizado)) {
+    estado.intentosFallidos = 0;
+    return { estado, respuestas: await respuestaListaProcedimientos() };
+  }
+
+  // El orden importa. "Agendar Brackets fijos" menciona un procedimiento Y pide
+  // cita: hay que resolverlo antes de que el clasificador lo lea solo como
+  // AGENDAR (y pierda el procedimiento) o solo como CONSULTAR (y repita la
+  // lista).
+  if (procedimientoMencionado && RE_INTENCION_AGENDAR.test(normalizado)) {
+    return iniciarAgendamiento(estado, procedimientoMencionado);
+  }
+
+  // Menciona un procedimiento sin pedir cita: quiere informacion de ESE
+  // procedimiento, no el catalogo entero otra vez.
+  if (procedimientoMencionado) {
+    estado.intentosFallidos = 0;
+    return { estado, respuestas: respuestaDetalleProcedimiento(procedimientoMencionado) };
+  }
+
   const { intencion } = clasificarIntencion(mensaje);
 
   switch (intencion) {
@@ -99,9 +173,7 @@ async function pasoEsperandoIntencion(estado, mensaje) {
       return { estado, respuestas: [menuInicial(true)] };
 
     case "AGENDAR":
-      estado.paso = "AGENDAR_NOMBRE";
-      estado.intentosFallidos = 0;
-      return { estado, respuestas: [texto("Perfecto ✍️ ¿Cual es tu nombre completo?")] };
+      return iniciarAgendamiento(estado, null);
 
     case "CONSULTAR_PROCEDIMIENTOS":
       return { estado, respuestas: await respuestaListaProcedimientos() };
@@ -162,6 +234,28 @@ async function pasoAgendarTelefono(estado, mensaje) {
     return { estado, respuestas: [texto("Ese numero no parece valido. ¿Puedes escribirlo de nuevo? (ej: 3001234567)")] };
   }
   estado.datos.telefono = telefono;
+
+  // Si el paciente entro al flujo desde el detalle de un procedimiento
+  // ("Agendar Ortodoncia"), ese dato ya esta resuelto y preguntarlo de nuevo
+  // sobraria: se salta directo a la fecha.
+  if (estado.datos.procedimientoId) {
+    const { catalogo } = await opcionesProcedimientos();
+    const elegido = catalogo.find((p) => p.id === estado.datos.procedimientoId);
+    if (elegido) {
+      estado.paso = "AGENDAR_FECHAHORA";
+      return {
+        estado,
+        respuestas: [
+          texto(
+            `Listo. Para tu *${elegido.nombre}*, ¿que dia y hora prefieres? (ej: jueves 3:00 p.m.)`
+          ),
+        ],
+      };
+    }
+    // El procedimiento se desactivo mientras la conversacion estaba abierta.
+    estado.datos.procedimientoId = null;
+  }
+
   estado.paso = "AGENDAR_PROCEDIMIENTO";
   const { opciones } = await opcionesProcedimientos();
   return { estado, respuestas: [texto("¿Que procedimiento deseas agendar?", opciones)] };

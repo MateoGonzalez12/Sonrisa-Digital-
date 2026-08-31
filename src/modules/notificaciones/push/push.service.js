@@ -118,7 +118,14 @@ async function avisarCitaReprogramada(cita) {
   });
 }
 
+// Permite que la API responda con un error claro en vez de decir "enviado"
+// cuando en realidad no hay claves VAPID en el servidor.
+function estaConfigurado() {
+  return Boolean(env.vapid.publicKey && env.vapid.privateKey);
+}
+
 module.exports = {
+  estaConfigurado,
   registrarSuscripcion,
   eliminarSuscripcion,
   enviarA,

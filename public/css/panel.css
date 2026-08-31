@@ -13,9 +13,14 @@ body.panel-body{background:var(--bg-page);min-height:100vh;}
 .login-card p.subt{text-align:center;color:var(--ink-soft);font-size:13.5px;margin-bottom:24px;}
 .field{margin-bottom:16px;}
 .field label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+/* font-size:16px no es una decision estetica: Safari en iOS amplia la pagina
+   automaticamente al enfocar cualquier campo con letra menor a 16px, y ese zoom
+   no se revierte al salir del campo (la agenda queda ampliada hasta recargar).
+   touch-action:manipulation desactiva ademas el zoom por doble toque. */
 .field input, .field select, .field textarea{
   width:100%;border:1px solid rgba(122,88,52,.28);border-radius:12px;padding:11px 13px;
-  font-size:14px;font-family:inherit;outline:none;background:var(--white);color:var(--ink);
+  font-size:16px;font-family:inherit;outline:none;background:var(--white);color:var(--ink);
+  touch-action:manipulation;
 }
 .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--gold);}
 .field-error{color:var(--danger);font-size:12.5px;margin-top:6px;display:none;}

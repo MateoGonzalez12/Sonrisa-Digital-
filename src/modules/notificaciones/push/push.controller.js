@@ -33,13 +33,34 @@ const desuscribir = asyncHandler(async (req, res) => {
 
 // Permite que la Dra. compruebe en el momento que las notificaciones le llegan,
 // sin tener que esperar a que un paciente agende.
+//
+// La prueba tiene que fallar de forma ruidosa. Antes devolvia 200 con
+// {enviadas: 0} cuando faltaban las claves VAPID en el servidor o cuando el
+// dispositivo no habia quedado suscrito, y la agenda mostraba "te acabamos de
+// enviar una notificacion" aunque no se hubiera enviado nada: el problema real
+// quedaba invisible.
 const probar = asyncHandler(async (req, res) => {
+  if (!pushService.estaConfigurado()) {
+    throw new AppError(
+      "El servidor no tiene configuradas las claves VAPID, por eso no puede enviar notificaciones.",
+      503
+    );
+  }
+
   const resultado = await pushService.enviarA(req.usuario.id, {
     titulo: "Notificaciones activadas",
     cuerpo: "Asi se veran los avisos de tus nuevas citas.",
     url: "/agenda/hoy.html",
     tag: "prueba",
   });
+
+  if (resultado.enviadas === 0) {
+    throw new AppError(
+      "Este dispositivo no quedo suscrito a las notificaciones. Cierra la agenda, vuelve a abrirla desde el icono de la pantalla de inicio e intenta de nuevo.",
+      409
+    );
+  }
+
   res.json(resultado);
 });
 

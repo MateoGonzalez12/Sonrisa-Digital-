@@ -48,5 +48,10 @@ module.exports = {
     rpName: process.env.WEBAUTHN_RP_NAME || "Sonrisa Digital",
     rpId: process.env.WEBAUTHN_RP_ID || "localhost",
     origin: process.env.WEBAUTHN_ORIGIN || "http://localhost:3000",
+    // Distingue "el dominio esta fijado a proposito" de "quedo el valor por
+    // defecto". Sin esta bandera no habia forma de saber si "localhost" era una
+    // decision o un descuido, y en el despliegue se enviaba localhost como rpId
+    // (lo que hace fallar Face ID antes incluso de mostrar el sensor).
+    rpIdExplicito: Boolean((process.env.WEBAUTHN_RP_ID || "").trim()),
   },
 };

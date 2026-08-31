@@ -369,7 +369,10 @@ footer{background:linear-gradient(180deg,#2E2416,#241C10);color:var(--cream);pad
 .status-pill.completada{background:#DCE7F2;color:#2F5C6B;}
 .status-pill.no_asistio{background:#EDEDED;color:#555;}
 .phone-input{display:flex;gap:9px;padding:13px 14px;border-top:1px solid rgba(122,88,52,.14);background:var(--white);}
-.phone-input input{flex:1;border:1.4px solid rgba(122,88,52,.22);border-radius:999px;padding:11px 15px;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .18s, box-shadow .18s;background:var(--bg-page);}
+/* 16px es el minimo que exige Safari en iOS: con letra menor, al enfocar el
+   campo el navegador amplia la pagina y ese zoom NO se revierte al salir, asi
+   que la landing queda ampliada. touch-action desactiva el zoom por doble toque. */
+.phone-input input{flex:1;border:1.4px solid rgba(122,88,52,.22);border-radius:999px;padding:10px 15px;font-size:16px;line-height:1.25;touch-action:manipulation;outline:none;font-family:inherit;transition:border-color .18s, box-shadow .18s;background:var(--bg-page);}
 .phone-input input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(176,138,85,.16);background:var(--white);}
 .send-btn{background:linear-gradient(150deg,var(--gold-light),var(--gold) 60%,var(--gold-dark));border:none;color:var(--cream);width:42px;height:42px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;transition:transform .18s var(--ease), box-shadow .18s;box-shadow:0 4px 12px rgba(122,88,52,.35);}
 .send-btn:hover{transform:scale(1.07);}
