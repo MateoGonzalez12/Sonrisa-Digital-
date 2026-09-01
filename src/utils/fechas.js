@@ -1,4 +1,4 @@
-// Utilidades de fecha/hora en espanol para el modulo de chatbot (RF-08: extraer
+// Utilidades de fecha/hora en espanol para el modulo de chatbot (extraer
 // fecha y hora del mensaje). Es un parser basado en reglas (no depende de
 // librerias externas de pago ni de IA), pensado para el lenguaje natural con el
 // que un paciente normalmente escribe una fecha.

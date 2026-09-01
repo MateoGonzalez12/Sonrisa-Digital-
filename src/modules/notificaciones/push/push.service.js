@@ -2,7 +2,7 @@ const webpush = require("web-push");
 const prisma = require("../../../db/prisma");
 const env = require("../../../config/env");
 
-// Notificaciones push al dispositivo del staff (RF-15 / RF-27).
+// Notificaciones push al dispositivo del staff.
 //
 // Se diferencia de WhatsApp en el destinatario: WhatsApp avisa al PACIENTE,
 // el push avisa al EQUIPO (la Dra. y la auxiliar) en su propio celular, aunque

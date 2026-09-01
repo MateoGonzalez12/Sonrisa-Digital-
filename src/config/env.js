@@ -1,5 +1,12 @@
 require("dotenv").config();
 
+// Zona horaria del proceso. Tiene que fijarse antes de que se cree cualquier
+// Date, por eso vive aqui: este es el primer modulo que carga el servidor.
+// Windows ya corre en hora de Colombia, pero Render ejecuta los contenedores en
+// UTC: sin esto, una cita pedida a las 8:00 se guardaba como 08:00 UTC y la
+// agenda la mostraba a las 3:00 a.m.
+process.env.TZ = process.env.TZ || "America/Bogota";
+
 function required(name, fallback) {
   const value = process.env[name] ?? fallback;
   if (value === undefined) {
@@ -11,7 +18,7 @@ function required(name, fallback) {
 // Origenes permitidos para CORS. En desarrollo se deja abierto; en produccion
 // se restringe a los dominios declarados en CORS_ORIGIN (separados por coma)
 // para que ningun sitio de terceros pueda consumir la API con el token del
-// usuario (RNF-05).
+// usuario.
 function origenesPermitidos() {
   const crudo = (process.env.CORS_ORIGIN || "").trim();
   if (!crudo) return true; // sin configurar: refleja el origen (comportamiento de desarrollo)

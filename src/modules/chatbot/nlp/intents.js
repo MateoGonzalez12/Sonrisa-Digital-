@@ -1,4 +1,4 @@
-// patrones para clasificar la intencion del mensaje del paciente.
+// Patrones para clasificar la intencion del mensaje del paciente.
 module.exports = {
   SALUDO: [
     "hola", "buenas", "buenos dias", "buenas tardes", "buenas noches", "que tal", "hey",

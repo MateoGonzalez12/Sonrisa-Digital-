@@ -263,7 +263,7 @@ const Movil = (function () {
   });
 
   async function pedirInstalacion() {
-    // iOS no expone beforeinstallprompt: alli el proceso es manual y se guia
+    // IOS no expone beforeinstallprompt: alli el proceso es manual y se guia
     // con instrucciones en pantalla.
     if (!promptDiferido) return { manual: true, ios: esIOS() };
     promptDiferido.prompt();

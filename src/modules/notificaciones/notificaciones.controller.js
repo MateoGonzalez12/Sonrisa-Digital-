@@ -3,7 +3,7 @@ const prisma = require("../../db/prisma");
 const service = require("./notificaciones.service");
 
 // Webhook que Twilio (o Meta Cloud API mas adelante) invoca cuando el
-// paciente responde un mensaje de WhatsApp. RF-11/RF-12.
+// paciente responde un mensaje de WhatsApp.
 const webhookEntrante = asyncHandler(async (req, res) => {
   // Twilio envia "From" como "whatsapp:+573001234567" y "Body" con el texto.
   const from = String(req.body.From || req.body.from || "").replace("whatsapp:", "");

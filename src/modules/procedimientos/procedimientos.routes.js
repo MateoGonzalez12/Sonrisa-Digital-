@@ -8,7 +8,7 @@ const router = Router();
 router.get("/", controller.listar);
 router.get("/:id", controller.obtener);
 
-// Solo admin puede modificar el catalogo (RF-19)
+// Solo admin puede modificar el catalogo
 router.post("/", requireRol("admin"), controller.crear);
 router.put("/:id", requireRol("admin"), controller.actualizar);
 router.delete("/:id", requireRol("admin"), controller.eliminar);

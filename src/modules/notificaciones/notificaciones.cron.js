@@ -4,7 +4,7 @@ const { enviarRecordatorio } = require("./notificaciones.service");
 
 const ANTICIPACION_HORAS = 24;
 
-// RF-10: revisa cada 15 minutos las citas que caen dentro de la ventana de
+// Revisa cada 15 minutos las citas que caen dentro de la ventana de
 // anticipacion configurada y aun no tienen recordatorio enviado.
 async function ejecutarRevisionDeRecordatorios() {
   const ahora = new Date();
@@ -21,7 +21,7 @@ async function ejecutarRevisionDeRecordatorios() {
   });
 
   for (const cita of citas) {
-    // eslint-disable-next-line no-await-in-loop
+    // Eslint-disable-next-line no-await-in-loop
     await enviarRecordatorio(cita);
   }
 

@@ -2,7 +2,7 @@ const prisma = require("../../db/prisma");
 const proveedorWhatsapp = require("./whatsapp");
 const { formatFechaHora } = require("../../utils/fechas");
 
-// si el proveedor de WhatsApp falla, el mensaje se registra igual
+// Si el proveedor de WhatsApp falla, el mensaje se registra igual
 // (sin id de proveedor) y el resto del sistema sigue funcionando; nunca se
 // lanza el error hacia arriba para no tumbar el flujo de citas por una falla
 // externa.
@@ -71,8 +71,8 @@ async function registrarMensajeEntrante({ telefono, texto, citaId }) {
   });
 }
 
-// RF-10: recordatorio automatico con anticipacion configurada (KAN-40), sin
-// duplicarse para la misma cita (KAN-41: se marca recordatorioEnviado=true).
+// Recordatorio automatico con anticipacion configurada, sin
+// duplicarse para la misma cita (se marca recordatorioEnviado=true).
 async function enviarRecordatorio(cita) {
   if (cita.recordatorioEnviado || !cita.paciente.telefono) return null;
 
@@ -100,7 +100,7 @@ async function enviarRecordatorio(cita) {
   return texto;
 }
 
-// RF-14: notifica al paciente cuando el consultorio reprograma/cancela su cita.
+// Notifica al paciente cuando el consultorio reprograma/cancela su cita.
 async function notificarCambioAlPaciente(cita, mensajeExtra) {
   if (!cita.paciente.telefono) return null;
   const texto = `Hola ${cita.paciente.nombre.split(" ")[0]}, tu cita en Odontologia Especializada ${mensajeExtra}`;
@@ -117,7 +117,7 @@ async function notificarCambioAlPaciente(cita, mensajeExtra) {
   });
 }
 
-// RF-15: alerta al personal administrativo cuando el paciente cancela.
+// Alerta al personal administrativo cuando el paciente cancela.
 async function alertarAdministrativo(cita, motivo) {
   const env = require("../../config/env");
   if (!env.adminWhatsappNumber) return null;
@@ -137,7 +137,7 @@ async function alertarAdministrativo(cita, motivo) {
   });
 }
 
-// Confirmación de la cita agendada por el cliente 
+// Confirmación de la cita agendada por el cliente
 function textoConfirma(texto) {
   const t = texto.trim().toLowerCase();
   return /(confirm|si\b|sí|ok|vale)/.test(t);
@@ -148,7 +148,7 @@ function textoCancela(texto) {
   return /(cancel|no\b)/.test(t);
 }
 
-// procesa la respuesta entrante del paciente por WhatsApp para
+// Procesa la respuesta entrante del paciente por WhatsApp para
 // confirmar o cancelar su proxima cita. Si el mensaje no se reconoce,
 // no se modifica el estado de la cita.
 async function procesarRespuestaEntrante({ telefono, texto }) {

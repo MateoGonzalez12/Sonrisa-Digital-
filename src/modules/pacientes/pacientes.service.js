@@ -1,14 +1,14 @@
 const prisma = require("../../db/prisma");
 const { AppError } = require("../../middlewares/errorHandler");
 
-// RF-16: el paciente queda registrado solo con nombre y cedula, sin cuenta ni
-// contrasena (KAN-50). Si la cedula ya existe, reutiliza el registro (y
+// El paciente queda registrado solo con nombre y cedula, sin cuenta ni
+// contrasena. Si la cedula ya existe, reutiliza el registro (y
 // actualiza el nombre/telefono si vinieron mas completos).
 async function buscarOCrearPaciente({ nombre, cedula, telefono }) {
   const cedulaLimpia = String(cedula || "").trim();
   const nombreLimpio = String(nombre || "").trim();
 
-  // KAN-51: no es posible crear una cita sin nombre y cedula validos.
+  // No es posible crear una cita sin nombre y cedula validos.
   if (!cedulaLimpia || cedulaLimpia.length < 5) {
     throw new AppError("La cedula ingresada no es valida.", 400);
   }
@@ -29,8 +29,7 @@ async function buscarOCrearPaciente({ nombre, cedula, telefono }) {
   });
 }
 
-// RF-17: busca por cedula exacta o por nombre (insensible a mayusculas/minusculas
-// - KAN-84).
+// Busca por cedula exacta o por nombre, insensible a mayusculas/minusculas.
 async function buscarPacientes(termino) {
   const q = String(termino || "").trim();
   if (!q) return [];
@@ -47,7 +46,7 @@ async function buscarPacientes(termino) {
   });
 }
 
-// RF-18: historial completo (pasado y futuro) de citas de un paciente por cedula.
+// Historial completo (pasado y futuro) de citas de un paciente por cedula.
 // Listado para la pantalla de pacientes del panel. Se mantiene separado de
 // buscarPacientes porque esa funcion la usa tambien el modulo de citas, donde
 // un termino vacio debe seguir devolviendo cero resultados.

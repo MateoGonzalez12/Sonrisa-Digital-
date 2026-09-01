@@ -7,12 +7,12 @@ const webauthn = require("./webauthn/webauthn.controller");
 const router = Router();
 
 // El limitador va antes del controlador: frena la fuerza bruta sobre el PIN
-// (RF-26) sin que el modulo de auth tenga que saber como se cuenta.
+// sin que el modulo de auth tenga que saber como se cuenta.
 router.post("/admin/login", loginAdminLimiter, loginAdmin);
 router.post("/staff/login", loginStaffLimiter, loginStaff);
 router.get("/staff/directorio", listarStaffParaLogin);
 
-// Biometria (Face ID / Touch ID) - RF-26.
+// Biometria (Face ID / Touch ID).
 // El registro exige sesion activa; el login es publico por definicion.
 router.post("/staff/webauthn/registro/opciones", requireRol("staff"), webauthn.opcionesRegistro);
 router.post("/staff/webauthn/registro/verificar", requireRol("staff"), webauthn.verificarRegistro);

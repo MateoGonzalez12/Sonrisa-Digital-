@@ -53,7 +53,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 cargarDirectorio();
 
 
-/* ---------------- Face ID (RF-26) ---------------- */
+/* ---------------- Face ID ---------------- */
 
 const btnFaceId = document.getElementById("btnFaceId");
 

@@ -13,7 +13,7 @@ function parseHoraAMinutos(horaTexto) {
   return h * 60 + (m || 0);
 }
 
-// verifica disponibilidad real (horario laboral + bloqueos + citas ya
+// Verifica disponibilidad real (horario laboral + bloqueos + citas ya
 // tomadas) antes de confirmar. excluirCitaId se usa al reprogramar
 // para no chocar contra la propia cita que se esta moviendo.
 async function estaDisponible(odontologoId, fechaHora, duracionMin, { excluirCitaId } = {}) {
@@ -34,7 +34,7 @@ async function estaDisponible(odontologoId, fechaHora, duracionMin, { excluirCit
   });
   if (!dentroDeHorario) return false;
 
-  // un horario bloqueado no aparece como disponible (bloqueo especifico
+  // Un horario bloqueado no aparece como disponible (bloqueo especifico
   // del odontologo o bloqueo general del consultorio con odontologoId null).
   const bloqueos = await prisma.bloqueoHorario.findMany({
     where: {
@@ -62,7 +62,7 @@ async function estaDisponible(odontologoId, fechaHora, duracionMin, { excluirCit
   return !colisiona;
 }
 
-// sugiere horarios alternativos realmente disponibles (KAN-123),
+// Sugiere horarios alternativos realmente disponibles,
 // buscando en bloques de 30 minutos dentro de los proximos 14 dias.
 async function sugerirAlternativas({ odontologoId, duracionMin, desde = new Date(), cantidad = 3 }) {
   const sugerencias = [];

@@ -3,7 +3,7 @@ const { quitarTildes } = require("../../../utils/fechas");
 
 const UMBRAL_CONFIANZA = 1; // al menos una coincidencia de frase clave
 
-// identifica la intencion contando coincidencias de frases
+// Identifica la intencion contando coincidencias de frases
 // clave por categoria y eligiendo la de mayor puntaje.
 // si nada supera el umbral, devuelve AMBIGUO para que el flujo pida
 // aclaracion sin bloquear la conversacion.

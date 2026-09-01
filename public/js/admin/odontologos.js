@@ -119,7 +119,7 @@ document.getElementById("formStaff").addEventListener("submit", async (e) => {
   }
 });
 
-// ---- Horarios (RF-20) ----
+// ---- Horarios ----
 async function abrirHorarios(id, nombre) {
   document.getElementById("horarioStaffId").value = id;
   document.getElementById("nombreHorarioStaff").textContent = nombre;
@@ -167,7 +167,7 @@ document.getElementById("formHorarios").addEventListener("submit", async (e) => 
   }
 });
 
-// ---- Bloqueos (RF-21) ----
+// ---- Bloqueos ----
 document.getElementById("btnNuevoBloqueo").onclick = () => {
   document.getElementById("formBloqueo").reset();
   document.getElementById("errorBloqueo").style.display = "none";

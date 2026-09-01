@@ -7,7 +7,7 @@ function extraerToken(req) {
   return null;
 }
 
-// RF-16 / RNF-05: separa el acceso segun el tipo de usuario (admin vs staff movil).
+// Separa el acceso segun el tipo de usuario (admin vs staff movil).
 function requireRol(rolEsperado) {
   return function (req, res, next) {
     const token = extraerToken(req);

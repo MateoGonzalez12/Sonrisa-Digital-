@@ -8,7 +8,7 @@ const citasService = require("../citas/citas.service");
 const { estaDisponible, sugerirAlternativas } = require("../citas/disponibilidad.service");
 const notificaciones = require("../notificaciones/notificaciones.service");
 
-const MAX_INTENTOS_FALLIDOS = 3; 
+const MAX_INTENTOS_FALLIDOS = 3;
 
 // ---------------------------------------------------------------------------
 // Helpers de presentacion
@@ -87,7 +87,7 @@ const RE_INTENCION_AGENDAR = /\b(agendar|agendame|agendarme|agenda|reservar|sepa
 // alguno de ellos.
 const RE_VOLVER_A_LISTA = /(ver todos|todos los procedimientos|otros procedimientos|otro procedimiento|ver la lista|volver a la lista|consultar procedimientos|ver procedimientos|que procedimientos|lista de procedimientos)/;
 
-// tras N intentos sin entender al paciente, deriva a un humano y da un
+// Tras N intentos sin entender al paciente, deriva a un humano y da un
 // mensaje claro, sin dejar la conversacion bloqueada.
 function mensajeDerivacionHumana() {
   return texto(
@@ -123,7 +123,7 @@ async function manejarAmbiguo(estado) {
 }
 
 // ---------------------------------------------------------------------------
-// ESPERANDO_INTENCION 
+// ESPERANDO_INTENCION
 // ---------------------------------------------------------------------------
 // Arranca el flujo de agenda. Si el paciente ya dijo que procedimiento quiere
 // (por ejemplo pulsando "Agendar Ortodoncia"), se guarda aqui y mas adelante se
@@ -417,6 +417,18 @@ async function pasoAgendarConfirmar(estado, mensaje) {
     texto: `¡Hola ${cita.paciente.nombre.split(" ")[0]}! Tu cita de ${cita.procedimiento.nombre} quedo agendada para el ${formatFechaHora(cita.fechaHora)}. Te avisaremos un dia antes 🦷`,
     citaId: cita.id,
     tipo: "chatbot",
+    // Va con plantilla obligatoriamente. El paciente agenda desde la web, no
+    // escribiendo por WhatsApp, asi que la ventana de 24 h de texto libre nunca
+    // se abre y Meta rechaza el mensaje con el error 131047.
+    plantilla: {
+      nombre: process.env.META_PLANTILLA_CONFIRMACION || "confirmacion_cita",
+      idioma: "es",
+      parametros: [
+        cita.paciente.nombre.split(" ")[0],
+        cita.procedimiento.nombre,
+        formatFechaHora(cita.fechaHora),
+      ],
+    },
   });
 
   estado.paso = "ESPERANDO_INTENCION";
@@ -469,7 +481,7 @@ async function pasoVerCitasCedula(estado, mensaje) {
 }
 
 // ---------------------------------------------------------------------------
-// Flujo REPROGRAMAR 
+// Flujo REPROGRAMAR
 // ---------------------------------------------------------------------------
 async function buscarCitaActivaMasProxima(cedula) {
   const paciente = await prisma.paciente.findUnique({ where: { cedula } });
@@ -533,6 +545,16 @@ async function pasoReprogramarConfirmar(estado, mensaje) {
     texto: `Tu cita fue reprogramada para el ${formatFechaHora(cita.fechaHora)} ✅`,
     citaId: cita.id,
     tipo: "confirmacion",
+    // Misma razon: fuera de la ventana de 24 h solo pasa la plantilla. Se
+    // reutiliza la de cambio de cita para no tener que aprobar una mas.
+    plantilla: {
+      nombre: process.env.META_PLANTILLA_CAMBIO || "cambio_cita",
+      idioma: "es",
+      parametros: [
+        cita.paciente.nombre.split(" ")[0],
+        `fue reprogramada para el ${formatFechaHora(cita.fechaHora)}`,
+      ],
+    },
   });
 
   estado.paso = "ESPERANDO_INTENCION";
@@ -541,7 +563,7 @@ async function pasoReprogramarConfirmar(estado, mensaje) {
 }
 
 // ---------------------------------------------------------------------------
-// Flujo CANCELAR 
+// Flujo CANCELAR
 // ---------------------------------------------------------------------------
 async function pasoCancelarCedula(estado, mensaje) {
   const cedula = limpiarCedula(mensaje);

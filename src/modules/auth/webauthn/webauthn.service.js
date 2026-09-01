@@ -9,7 +9,7 @@ const prisma = require("../../../db/prisma");
 const env = require("../../../config/env");
 const { AppError } = require("../../../middlewares/errorHandler");
 
-// Autenticacion biometrica (Face ID / Touch ID) para el staff - RF-26.
+// Autenticacion biometrica (Face ID / Touch ID) para el staff.
 //
 // Como funciona: el iPhone guarda una clave privada protegida por la cara o la
 // huella y nunca la entrega a nadie. El servidor guarda solo la clave publica y

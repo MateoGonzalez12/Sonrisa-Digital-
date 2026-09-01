@@ -105,7 +105,7 @@ model Cita {
   estado              EstadoCita @default(PENDIENTE)
   origen              String     @default("chatbot") // chatbot | admin
   notasAdmin          String?
-  recordatorioEnviado Boolean    @default(false) // evita duplicar el recordatorio (KAN-41)
+  recordatorioEnviado Boolean    @default(false) // evita duplicar el recordatorio
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
 
@@ -114,7 +114,7 @@ model Cita {
   procedimiento Procedimiento     @relation(fields: [procedimientoId], references: [id])
   mensajes      MensajeWhatsapp[]
 
-  // Evita doble reserva del mismo odontologo en el mismo instante (RF-02 / KAN-35)
+  // Evita doble reserva del mismo odontologo en el mismo instante
   @@unique([odontologoId, fechaHora])
   @@map("citas")
 }
@@ -145,7 +145,7 @@ model AdminUser {
 }
 
 // Guarda el estado de cada conversacion del chatbot para poder continuar
-// la conversacion entre mensajes sin perder contexto (RF-07/RF-08).
+// la conversacion entre mensajes sin perder contexto.
 model ConversacionChatbot {
   id        String   @id @default(uuid())
   canal     String   @default("web") // web | whatsapp
@@ -159,7 +159,7 @@ model ConversacionChatbot {
 
 // Credencial biometrica (Face ID / Touch ID) registrada por un miembro del
 // staff. La clave privada NUNCA sale del dispositivo: aqui solo se guarda la
-// clave publica con la que el servidor verifica la firma (RF-26 / RNF-05).
+// clave publica con la que el servidor verifica la firma.
 model CredencialWebAuthn {
   id           Int       @id @default(autoincrement())
   odontologoId Int

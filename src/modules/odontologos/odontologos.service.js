@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const prisma = require("../../db/prisma");
 const { AppError } = require("../../middlewares/errorHandler");
 
-// RF-24: gestionar odontologos y auxiliares
+// Gestionar odontologos y auxiliares
 async function listar({ soloActivos = false } = {}) {
   return prisma.odontologo.findMany({
     where: soloActivos ? { activo: true } : undefined,
@@ -50,7 +50,7 @@ async function actualizar(id, { nombre, rol, pin, activo }) {
   return prisma.odontologo.update({ where: { id: Number(id) }, data });
 }
 
-// KAN-71: un odontologo/auxiliar eliminado deja de aparecer como opcion en la
+// Un odontologo/auxiliar eliminado deja de aparecer como opcion en la
 // configuracion de horarios (soft-delete via activo=false, preserva historial
 // de citas ya asociadas a el).
 async function eliminar(id) {
@@ -58,7 +58,7 @@ async function eliminar(id) {
   return prisma.odontologo.update({ where: { id: Number(id) }, data: { activo: false } });
 }
 
-// RF-20: cada odontologo puede tener horarios distintos entre si (KAN-58).
+// Cada odontologo puede tener horarios distintos entre si.
 // Reemplaza el set completo de horarios semanales del odontologo.
 async function establecerHorarios(odontologoId, horarios) {
   await obtener(odontologoId);
@@ -80,8 +80,8 @@ async function establecerHorarios(odontologoId, horarios) {
   });
 }
 
-// RF-21: bloquear horarios no disponibles (vacaciones, permisos, etc.)
-// KAN-111: el bloqueo puede aplicarse a un odontologo especifico sin afectar
+// Bloquear horarios no disponibles (vacaciones, permisos, etc.)
+// el bloqueo puede aplicarse a un odontologo especifico sin afectar
 // a los demas (odontologoId null = bloqueo general del consultorio).
 async function crearBloqueo({ odontologoId, inicio, fin, motivo }) {
   if (!inicio || !fin) throw new AppError("Debes indicar inicio y fin del bloqueo", 400);

@@ -7,7 +7,7 @@ const { inicioDelDia, finDelDia, inicioDeLaSemana } = require("../../utils/fecha
 
 // El aviso al celular del staff no debe poder tumbar la operacion principal:
 // si el servicio de push falla, la cita igual queda agendada. Por eso se
-// dispara sin esperar y con el error contenido (RNF-07).
+// dispara sin esperar y con el error contenido.
 function avisarEnSegundoPlano(promesa) {
   Promise.resolve(promesa).catch((err) =>
     console.error("[push] no se pudo notificar al staff:", err.message)
@@ -29,7 +29,7 @@ async function obtenerOdontologoPorDefecto() {
   return odontologo;
 }
 
-// registra la solicitud solo cuando el paciente ha dado nombre, cedula,
+// Registra la solicitud solo cuando el paciente ha dado nombre, cedula,
 // procedimiento y fecha/hora . La cita queda en estado PENDIENTE
 // hasta que se confirme .
 async function crearCita({ nombre, cedula, telefono, procedimientoId, fechaHora, odontologoId, origen = "chatbot" }) {
@@ -87,7 +87,7 @@ async function obtenerCita(id) {
   return cita;
 }
 
-// reprograma sin generar un registro duplicado ; el horario
+// Reprograma sin generar un registro duplicado ; el horario
 // anterior queda liberado automaticamente porque la disponibilidad se calcula
 // en vivo sobre las citas activas.
 async function reprogramarCita(id, nuevaFechaHora) {
@@ -140,7 +140,7 @@ async function cancelarCita(id) {
   return cancelada;
 }
 
-// confirma la cita (respuesta del paciente por WhatsApp o chat).
+// Confirma la cita (respuesta del paciente por WhatsApp o chat).
 // respuestas no reconocidas no deben llegar aqui (se filtran antes).
 async function confirmarCita(id) {
   const cita = await obtenerCita(id);
@@ -178,7 +178,7 @@ async function listarCitas({ limite = 100 } = {}) {
   return [...proximas, ...pasadas].slice(0, limite);
 }
 
-// busca citas por nombre o cedula del paciente.
+// Busca citas por nombre o cedula del paciente.
 async function buscarPorPaciente(termino) {
   const pacientes = await pacientesService.buscarPacientes(termino);
   if (!pacientes.length) return [];
@@ -189,7 +189,7 @@ async function buscarPorPaciente(termino) {
   });
 }
 
-// agenda general del consultorio (todas las citas de todos los
+// Agenda general del consultorio (todas las citas de todos los
 // odontologos) para un rango de fechas.
 async function agendaGeneral({ desde, hasta }) {
   const inicio = desde ? inicioDelDia(new Date(desde)) : inicioDelDia(new Date());
@@ -201,7 +201,7 @@ async function agendaGeneral({ desde, hasta }) {
   });
 }
 
-//citas del dia para un odontologo/auxiliar especifico (KAN-128/129).
+// Citas del dia para un odontologo/auxiliar especifico.
 async function agendaDelDia(odontologoId, fecha = new Date()) {
   return prisma.cita.findMany({
     where: {
@@ -214,7 +214,7 @@ async function agendaDelDia(odontologoId, fecha = new Date()) {
   });
 }
 
-// citas organizadas por semana (KAN-130/131).
+// Citas organizadas por semana.
 async function agendaDeLaSemana(odontologoId, fechaReferencia = new Date()) {
   const inicioSemana = inicioDeLaSemana(fechaReferencia);
   const dias = [];
@@ -235,7 +235,7 @@ async function agendaDeLaSemana(odontologoId, fechaReferencia = new Date()) {
   return dias;
 }
 
-// reportes basicos (citas por estado, por odontologo, inasistencias).
+// Reportes basicos (citas por estado, por odontologo, inasistencias).
 async function reporteBasico({ desde, hasta } = {}) {
   const where = {};
   if (desde || hasta) {

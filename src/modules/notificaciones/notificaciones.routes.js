@@ -5,7 +5,7 @@ const push = require("./push/push.controller");
 
 const router = Router();
 
-// Notificaciones push al celular del staff (RF-27).
+// Notificaciones push al celular del staff.
 router.get("/push/clave-publica", push.clavePublica);
 router.post("/push/suscribir", requireRol("staff"), push.suscribir);
 router.post("/push/desuscribir", requireRol("staff"), push.desuscribir);

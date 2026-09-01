@@ -1,6 +1,6 @@
 // Carga el catalogo de procedimientos desde la API para que la landing
 // siempre muestre lo que hay realmente configurado en el modulo admin
-// (KAN-52: los cambios en el catalogo se reflejan de inmediato).
+// (los cambios en el catalogo se reflejan de inmediato).
 const ICONOS_PROCEDIMIENTO = {
   "Plan de tratamiento":
     '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><path d="M8 16l2 2 4-4"/></svg>',
@@ -93,7 +93,7 @@ function activarNavScroll() {
   window.addEventListener("scroll", onScroll, { passive: true });
 }
 
-// Cuenta de 0 al numero real cuando la cifra entra en pantalla (RNF-01: sigue
+// Cuenta de 0 al numero real cuando la cifra entra en pantalla (sigue
 // siendo una interfaz simple, solo le da vida a los datos de la Dra. Lyda).
 function activarContadores() {
   const contadores = document.querySelectorAll(".counter");

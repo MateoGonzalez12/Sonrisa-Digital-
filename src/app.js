@@ -8,7 +8,7 @@ const env = require("./config/env");
 const { notFoundHandler, errorHandler } = require("./middlewares/errorHandler");
 const { apiLimiter } = require("./middlewares/rateLimit");
 
-// Rutas de cada modulo (RNF-04: arquitectura modular - un router por dominio,
+// Rutas de cada modulo (arquitectura modular - un router por dominio,
 // montado de forma independiente; se puede quitar/reemplazar un modulo sin
 // tocar los demas).
 const authRoutes = require("./modules/auth/auth.routes");
@@ -25,7 +25,7 @@ const app = express();
 
 // En Render/Railway la app corre detras de un proxy inverso. Sin esto,
 // req.ip seria siempre la IP del proxy y el limitador de intentos trataria a
-// todos los usuarios como uno solo (RNF-05).
+// todos los usuarios como uno solo.
 if (env.trustProxy) {
   app.set("trust proxy", 1);
 }

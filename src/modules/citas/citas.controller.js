@@ -24,8 +24,8 @@ const reportes = asyncHandler(async (req, res) => {
   res.json(await service.reporteBasico({ desde: req.query.desde, hasta: req.query.hasta }));
 });
 
-// RF-23: reprogramar/cancelar desde el modulo admin, notificando al paciente
-// cuando corresponde (KAN-87/KAN-88).
+// Reprogramar/cancelar desde el modulo admin, notificando al paciente
+// cuando corresponde.
 const reprogramar = asyncHandler(async (req, res) => {
   const cita = await service.reprogramarCita(req.params.id, req.body.fechaHora);
   await notificaciones.notificarCambioAlPaciente(

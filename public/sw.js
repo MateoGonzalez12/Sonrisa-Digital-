@@ -33,7 +33,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_SHELL)
-      // addAll falla en bloque si un solo archivo falla; se agregan de a uno
+      // AddAll falla en bloque si un solo archivo falla; se agregan de a uno
       // para que un recurso ausente no impida instalar el service worker.
       .then((cache) => Promise.allSettled(SHELL.map((url) => cache.add(url))))
       .then(() => self.skipWaiting())

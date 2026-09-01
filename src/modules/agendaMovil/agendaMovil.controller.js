@@ -2,7 +2,7 @@ const asyncHandler = require("../../utils/asyncHandler");
 const { AppError } = require("../../middlewares/errorHandler");
 const citasService = require("../citas/citas.service");
 
-// KAN-133: el detalle no expone informacion del paciente mas alla de lo
+// El detalle no expone informacion del paciente mas alla de lo
 // necesario para atenderlo (nombre, cedula, procedimiento y horario).
 function proyectarCitaParaStaff(cita) {
   return {
@@ -14,21 +14,21 @@ function proyectarCitaParaStaff(cita) {
   };
 }
 
-// RF-27: citas del dia (KAN-128/129 - solo las del odontologo autenticado).
+// Citas del dia (solo las del odontologo autenticado).
 const citasDelDia = asyncHandler(async (req, res) => {
   const fecha = req.query.fecha ? new Date(req.query.fecha) : new Date();
   const citas = await citasService.agendaDelDia(req.usuario.id, fecha);
   res.json(citas.map(proyectarCitaParaStaff));
 });
 
-// RF-28: agenda semanal (KAN-130/131).
+// Agenda semanal.
 const citasDeLaSemana = asyncHandler(async (req, res) => {
   const fecha = req.query.fecha ? new Date(req.query.fecha) : new Date();
   const dias = await citasService.agendaDeLaSemana(req.usuario.id, fecha);
   res.json(dias.map((d) => ({ fecha: d.fecha, citas: d.citas.map(proyectarCitaParaStaff) })));
 });
 
-// RF-29: detalle de una cita puntual, validando que pertenezca al staff autenticado.
+// Detalle de una cita puntual, validando que pertenezca al staff autenticado.
 const detalleCita = asyncHandler(async (req, res) => {
   const cita = await citasService.obtenerCita(req.params.id);
   if (cita.odontologoId !== req.usuario.id) {

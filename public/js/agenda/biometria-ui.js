@@ -1,4 +1,4 @@
-/* Activacion de Face ID desde la agenda (RF-26).
+/* Activacion de Face ID desde la agenda.
  *
  * Se registra estando ya autenticado con el PIN: asi el sistema garantiza que
  * quien asocia su rostro es quien conoce el PIN de esa persona. A partir de

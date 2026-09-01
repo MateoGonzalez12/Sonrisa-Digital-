@@ -1,4 +1,4 @@
-// Manejo centralizado de errores (RNF-07: confiabilidad ante fallas) para que
+// Manejo centralizado de errores (confiabilidad ante fallas) para que
 // ningun modulo tenga que reimplementar su propio formato de respuesta de error.
 class AppError extends Error {
   constructor(message, statusCode = 400, details) {

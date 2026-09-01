@@ -40,7 +40,7 @@ async function actualizar(id, datos) {
   });
 }
 
-// KAN-53: no permitir eliminar un procedimiento con citas futuras activas sin
+// No permitir eliminar un procedimiento con citas futuras activas sin
 // advertencia previa. Por defecto solo se desactiva (soft delete); "forzar"
 // se usa cuando el admin ya confirmo la advertencia.
 async function eliminar(id, { forzar = false } = {}) {

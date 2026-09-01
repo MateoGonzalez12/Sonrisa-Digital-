@@ -1,6 +1,6 @@
 const rateLimit = require("express-rate-limit");
 
-// proteccion de los activos de informacion.
+// Proteccion de los activos de informacion.
 // El login Odontologas usa un PIN de 4 a 6 digitos.
 
 function respuestaDemasiadosIntentos(mensaje) {

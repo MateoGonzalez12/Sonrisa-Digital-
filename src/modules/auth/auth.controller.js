@@ -3,7 +3,7 @@ const asyncHandler = require("../../utils/asyncHandler");
 const { AppError } = require("../../middlewares/errorHandler");
 const { comparar, firmarToken } = require("./auth.service");
 
-// RF-16 admin: login por email/password
+// Login por email/password
 const loginAdmin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) throw new AppError("Email y contraseña son obligatorios", 400);
@@ -18,8 +18,8 @@ const loginAdmin = asyncHandler(async (req, res) => {
   res.json({ token, usuario: { id: admin.id, nombre: admin.nombre, email: admin.email } });
 });
 
-// RF-26: identificacion simple por nombre + PIN para odontologos/auxiliares
-// (sin usuario ni contrasena compleja - KAN-90).
+// Identificacion simple por nombre + PIN para odontologos/auxiliares, sin
+// usuario ni contrasena compleja.
 const loginStaff = asyncHandler(async (req, res) => {
   const { odontologoId, pin } = req.body;
   if (!odontologoId || !pin) throw new AppError("Selecciona tu nombre e ingresa tu PIN", 400);
