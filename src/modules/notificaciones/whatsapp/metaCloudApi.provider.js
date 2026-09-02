@@ -3,15 +3,6 @@ const WhatsAppProvider = require("./whatsapp.provider");
 // ---------------------------------------------------------------------------
 // PROVEEDOR DE PRODUCCION: WhatsApp Cloud API (Meta)
 // ---------------------------------------------------------------------------
-// Documentacion: https://developers.facebook.com/docs/whatsapp/cloud-api
-//
-// Regla clave del canal: solo se puede enviar texto libre dentro de las 24 h
-// posteriores al ultimo mensaje del paciente. Fuera de esa ventana Meta
-// rechaza el envio (error 131047) y hay que usar una plantilla aprobada.
-// Como los pacientes de este sistema agendan por la web y no por WhatsApp, esa
-// ventana normalmente ni siquiera se abre: por eso el recordatorio, los avisos
-// de cambio y las alertas administrativas van siempre por plantilla.
-// ---------------------------------------------------------------------------
 class MetaCloudApiProvider extends WhatsAppProvider {
   constructor() {
     super();
@@ -30,9 +21,12 @@ class MetaCloudApiProvider extends WhatsAppProvider {
     return `https://graph.facebook.com/${this.apiVersion}/${this.phoneNumberId}/messages`;
   }
 
-  // Meta espera el numero en E.164 pero sin el signo "+" ni separadores.
+  //Un celular colombiano son 10 digitos que empiezan por 3, asi que en ese caso se le
+  // antepone el 57. Los numeros que ya vienen completos se dejan intactos.
   normalizar(telefono) {
-    return String(telefono).replace(/[^\d]/g, "");
+    const digitos = String(telefono).replace(/[^\d]/g, "");
+    if (digitos.length === 10 && digitos.startsWith("3")) return `57${digitos}`;
+    return digitos;
   }
 
   async publicar(cuerpo) {
