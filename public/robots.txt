@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Panel administrativo, agenda movil y backend: no deben aparecer en Google.
+Disallow: /admin/
+Disallow: /agenda/
+Disallow: /api/
+
+# La landing carga la lista de servicios desde esta ruta; sin permitirla,
+# Google veria la seccion de servicios vacia.
+Allow: /api/procedimientos
+
+Sitemap: https://odontologiaespecializada.site/sitemap.xml
