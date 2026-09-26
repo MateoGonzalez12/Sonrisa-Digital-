@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Odontología Especializada · Dra. Lyda Paola González Angulo</title>
 <link rel="stylesheet" href="/css/styles.css">
 </head>
@@ -10,213 +10,263 @@
 
 <div class="scroll-progress"><div class="scroll-progress-bar" id="scrollProgressBar"></div></div>
 
-<header class="nav">
-  <div class="nav-inner">
-    <div class="brand">
-      <div class="logo-dot">LG</div>
-      <div class="names">
-        <b>Odontología Especializada</b>
-        <span>Dra. Lyda P. González Angulo</span>
-      </div>
+<div class="topbar">
+  <div class="container">
+    <div class="tb-left">
+      <span><svg class="icon" viewBox="0 0 24 24"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></svg>320 326 3703</span>
+      <span><svg class="icon" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>Cra. 13 #17-64, San Gil</span>
+      <span><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Lun–Sáb 8:00–18:00</span>
     </div>
-    <nav class="links">
-      <a class="item" href="#servicios">Servicios</a>
-      <a class="item" href="#nosotros">Nosotros</a>
-      <a class="item" href="#contacto">Contacto</a>
-      <a class="item" href="#" onclick="ChatWidget.open();return false;">Mis citas</a>
-      <span class="btn btn-primary btn-sm" onclick="ChatWidget.open()">Agendar cita</span>
-    </nav>
-  </div>
-</header>
-
-<section class="hero">
-  <div class="wrap hero-grid">
-    <div>
-      <span class="badge-eyebrow">Odontología especializada · San Gil, Santander</span>
-      <h1>Una sonrisa <em>segura</em>,<br>cuidada por una especialista.</h1>
-      <p class="lead">Diseñamos tu tratamiento de ortodoncia con planes claros, seguimiento cercano y una agenda en línea que se ajusta a tu tiempo.</p>
-      <div class="hero-cta">
-        <button class="btn btn-primary" onclick="ChatWidget.open()">💬 Agendar por chat</button>
-        <a class="btn btn-ghost" href="#contacto">Ver ubicación</a>
-      </div>
-      <div class="powered">✦ Agenda en línea impulsada por <b>Sonrisa Digital</b></div>
-    </div>
-    <div class="hero-art">
-      <div class="blob blob-1"></div>
-      <div class="blob blob-2"></div>
-      <div class="sparkle sparkle-1">✦</div>
-      <div class="sparkle sparkle-2">✦</div>
-      <div class="sparkle sparkle-3">✦</div>
-      <svg width="300" height="300" viewBox="0 0 300 300" fill="none">
-        <circle cx="150" cy="150" r="118" stroke="#AC8B60" stroke-width="1.4" opacity="0.35"/>
-
-        <!-- Sombra suave de apoyo -->
-        <ellipse cx="150" cy="222" rx="46" ry="8" fill="#7E5834" opacity="0.12"/>
-
-        <!-- Icono de diente: silueta unica limpia (corona + raiz), sin rasgos de rostro -->
-        <path d="M150,72
-                 C182,72 207,95 207,132
-                 C207,154 196,165 184,172
-                 C201,180 207,197 198,213
-                 C191,225 177,223 174,208
-                 C172,197 168,186 150,184
-                 C132,186 128,197 126,208
-                 C123,223 109,225 102,213
-                 C93,197 99,180 116,172
-                 C104,165 93,154 93,132
-                 C93,95 118,72 150,72 Z"
-              fill="#FFFCF6" stroke="#7E5834" stroke-width="2"/>
-
-        <!-- Surco superior de la corona (detalle anatomico sutil) -->
-        <path d="M120,108 Q150,120 180,108" stroke="#D8C39D" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.8"/>
-
-        <!-- Brillo de esmalte sano -->
-        <path d="M114,96 Q108,120 118,142" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.75"/>
-
-        <!-- Destello decorativo -->
-        <path d="M214,90 l4,10 l10,4 l-10,4 l-4,10 l-4-10 l-10-4 l10-4 z" fill="#EACB98" opacity="0.9"/>
-      </svg>
-      <div class="floating-badge floating-badge-rating">
-        <div class="stars">★★★★★</div>
-        <b>4.9/5</b>
-        <span>+300 sonrisas transformadas</span>
-      </div>
-      <div class="floating-badge floating-badge-slot">
-        <div class="pulse-dot"></div>
-        <div>
-          <b>Cita disponible</b>
-          <span>Esta semana</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="marquee-strip">
-  <div class="marquee-track">
-    <span>✦ Brackets fijos</span>
-    <span>✦ Alineadores transparentes</span>
-    <span>✦ Ortopedia dentofacial</span>
-    <span>✦ Planes a la medida</span>
-    <span>✦ Seguimiento cercano</span>
-    <span>✦ Agenda 100% en línea</span>
-    <span>✦ Brackets fijos</span>
-    <span>✦ Alineadores transparentes</span>
-    <span>✦ Ortopedia dentofacial</span>
-    <span>✦ Planes a la medida</span>
-    <span>✦ Seguimiento cercano</span>
-    <span>✦ Agenda 100% en línea</span>
   </div>
 </div>
 
-<section class="about" id="nosotros">
-  <div class="wrap about-grid">
-    <div class="avatar-ring reveal"><div class="inner">LG</div></div>
-    <div class="about-text reveal">
-      <span class="role">Odontóloga · Especialista en ortodoncia</span>
-      <h3>Dra. Lyda Paola González Angulo</h3>
-      <p>Acompaño a cada paciente durante todo su tratamiento de ortodoncia, desde el diagnóstico hasta el retiro de aparatos, con planes de tratamiento claros y seguimiento personalizado en cada cita.</p>
-      <div class="credentials">
-        <div><b class="counter" data-count="10" data-prefix="+">0</b><span>años de experiencia</span></div>
-        <div><b class="counter" data-count="5">0</b><span>tratamientos especializados</span></div>
-        <div><b class="counter" data-count="100" data-suffix="%">0</b><span>planes de tratamiento a la medida</span></div>
+<header class="nav">
+  <div class="container">
+    <div class="headrow">
+      <div class="brand">
+        <div class="brandmark">LG</div>
+        <div class="brandtext"><strong>Odontología Especializada</strong><span>DRA. LYDA P. GONZÁLEZ ANGULO</span></div>
+      </div>
+      <nav class="links">
+        <a href="#servicios">Servicios</a>
+        <a href="#nosotros">Nosotros</a>
+        <a href="#instalaciones">Instalaciones</a>
+        <a href="#resultados">Resultados</a>
+        <a href="#contacto">Contacto</a>
+      </nav>
+      <div class="head-actions">
+        <button class="btn outline sm" onclick="ChatWidget.open()">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>
+          Agendar cita
+        </button>
+        <button class="menu-btn" onclick="document.getElementById('mobile-nav').classList.toggle('open')" aria-label="Abrir menú">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-nav">
+      <a href="#servicios">Servicios</a>
+      <a href="#nosotros">Nosotros</a>
+      <a href="#instalaciones">Instalaciones</a>
+      <a href="#resultados">Resultados</a>
+      <a href="#contacto">Contacto</a>
+      <a href="#" onclick="ChatWidget.open();return false;">Mis citas</a>
+    </div>
+  </div>
+</header>
+
+<section class="hero-split">
+  <div class="container">
+    <div class="htext">
+      <p class="eyebrow"><span class="rule"></span>Odontología especializada · San Gil, Santander</p>
+      <h1>Recibe el mejor <em>tratamiento</em> de ortodoncia.</h1>
+      <p>Diseñamos tu tratamiento con planes claros, seguimiento cercano y una agenda en línea que se ajusta a tu tiempo.</p>
+      <div class="btnrow">
+        <button class="btn primary" onclick="ChatWidget.open()">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+          Agendar por chat
+        </button>
+        <a class="btn outline" href="#contacto">
+          Ver ubicación
+        </a>
+      </div>
+    </div>
+    <div class="hphoto">
+      <img src="/img/fachada-consultorio.jpg" alt="Fachada del consultorio de Odontología Especializada, Dra. Lyda P. González Angulo, en San Gil, Santander" loading="lazy">
+      <div class="badge">
+        <span class="stars">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z"/></svg>
+        </span>
+        <div><b>4.9/5</b><span>+300 sonrisas</span></div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="gallery" id="consultorio">
-  <div class="wrap gallery-grid">
-    <div class="gallery-photo reveal">
-      <img src="/img/fachada-consultorio.jpg" alt="Fachada del consultorio de Odontología Especializada, Dra. Lyda P. González Angulo, en San Gil, Santander" loading="lazy">
+<div class="float-cards">
+  <div class="container">
+    <div class="fcard dark reveal">
+      <div class="ic"><svg class="icon" viewBox="0 0 24 24"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></svg></div>
+      <h4>Llámanos</h4>
+      <b class="big">320 326 3703</b>
+      <p>También por WhatsApp, respuesta el mismo día</p>
     </div>
-    <div class="gallery-text reveal">
-      <span class="badge-eyebrow">Nuestro consultorio</span>
-      <h2>Un espacio pensado para tu comodidad</h2>
-      <p>Visítanos en nuestras instalaciones en San Gil, Santander, diseñadas para que cada cita sea una experiencia cómoda y tranquila, desde el ingreso hasta el consultorio.</p>
-      <a class="btn btn-ghost" href="#contacto">Cómo llegar</a>
+    <div class="fcard light reveal">
+      <div class="ic"><svg class="icon" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></div>
+      <h4>Consultorio certificado</h4>
+      <p>Especialista en ortodoncia y ortopedia dentofacial, San Gil, Santander.</p>
     </div>
+    <div class="fcard light reveal">
+      <div class="ic"><svg class="icon" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg></div>
+      <h4>Horario de atención</h4>
+      <div class="hrs"><span>Lun – vie</span><span>8:00–18:00</span></div>
+      <div class="hrs"><span>Sábado</span><span>8:00–12:00</span></div>
+    </div>
+  </div>
+</div>
+
+<section class="section" id="nosotros">
+  <div class="container about-grid">
+    <div class="about-copy reveal">
+      <p class="eyebrow"><span class="rule"></span>Nosotros</p>
+      <h2>Dra. Lyda Paola González Angulo</h2>
+      <p class="lead">Acompaño a cada paciente durante todo su tratamiento de ortodoncia, desde el diagnóstico hasta el retiro de aparatos, con planes de tratamiento claros y seguimiento personalizado en cada cita.</p>
+      <ul class="checklist">
+        <li><span class="tick"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>Planes de tratamiento a la medida</li>
+        <li><span class="tick"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>Seguimiento personalizado en cada cita</li>
+        <li><span class="tick"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>Agenda 100% en línea</li>
+        <li><span class="tick"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>Atención a niños y adultos</li>
+      </ul>
+      <div class="badge-row">
+        <div class="badge-circle"><b class="counter" data-count="10" data-prefix="+">0</b><span>Años</span></div>
+        <div><div class="sig">Lyda González</div><div class="sig-cap">Odontóloga · especialista en ortodoncia</div></div>
+      </div>
+    </div>
+    <div class="photo reveal"><img src="/img/resultado-tratamiento.jpg" alt="Resultado de tratamiento de ortodoncia en paciente de Odontología Especializada" loading="lazy"></div>
   </div>
 </section>
 
-<section id="servicios">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="badge-eyebrow">Servicios</span>
-      <h2>Tratamientos que ofrecemos</h2>
-      <p>Cada servicio inicia con una valoración para definir contigo el plan más adecuado.</p>
-    </div>
-    <div class="services-grid" id="serviciosGrid">
+<section class="section" id="servicios" style="background:var(--surface-2);padding-top:0">
+  <div class="container">
+    <p class="eyebrow"><span class="rule"></span>Servicios</p>
+    <h2 style="font-size:30px;margin-bottom:12px">Qué ofrecemos</h2>
+    <p style="color:var(--ink-soft);font-size:15px;max-width:56ch;margin-bottom:var(--sp-6)">Cada servicio inicia con una valoración para definir contigo el plan más adecuado.</p>
+    <div class="icard-grid" id="serviciosGrid">
       <div class="empty-state">Cargando servicios…</div>
     </div>
   </div>
 </section>
 
-<section class="gallery results" id="resultados">
-  <div class="wrap gallery-grid gallery-grid-reverse">
-    <div class="gallery-text reveal">
-      <span class="badge-eyebrow">Resultados</span>
-      <h2>Sonrisas reales, cuidadas de cerca</h2>
-      <p>Cada tratamiento se documenta y se acompaña de cerca en cada control. Foto publicada con autorización del paciente.</p>
-    </div>
-    <div class="gallery-photo reveal">
-      <img src="/img/resultado-tratamiento.jpg" alt="Resultado de tratamiento de ortodoncia en paciente de Odontología Especializada, Dra. Lyda P. González Angulo" loading="lazy">
+<div class="stats-band">
+  <div class="container">
+    <div class="sband-item"><div class="ic"><svg class="icon" viewBox="0 0 24 24" style="color:#fff"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></div><div><b class="counter" data-count="10" data-prefix="+">0</b><span>Años de experiencia</span></div></div>
+    <div class="sband-item"><div class="ic"><svg class="icon" viewBox="0 0 24 24" style="color:#fff"><path d="M12 2a5 5 0 0 0-5 5c0 3 2 4 2 7 0 3-1.5 3.5-1.5 5.5a1.5 1.5 0 0 0 3 0c0-1 .5-1.5 1.5-1.5s1.5.5 1.5 1.5a1.5 1.5 0 0 0 3 0c0-2-1.5-2.5-1.5-5.5 0-3 2-4 2-7a5 5 0 0 0-5-5z"/></svg></div><div><b class="counter" data-count="5">0</b><span>Tratamientos especializados</span></div></div>
+    <div class="sband-item"><div class="ic"><svg class="icon" viewBox="0 0 24 24" style="color:#fff"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><b class="counter" data-count="300" data-prefix="+">0</b><span>Sonrisas transformadas</span></div></div>
+    <div class="sband-item"><div class="ic"><svg class="icon" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z"/></svg></div><div><b>4.9/5</b><span>Calificación de pacientes</span></div></div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container about2">
+    <div class="photo reveal"><img src="/img/fachada-consultorio.jpg" alt="Fachada del consultorio" loading="lazy"></div>
+    <div class="reveal">
+      <p class="eyebrow"><span class="rule"></span>Nosotros</p>
+      <h2 style="font-size:28px">El cuidado detrás de cada sonrisa</h2>
+      <p style="color:var(--ink-soft);font-size:14.5px;line-height:1.7;margin-top:10px;max-width:48ch">El consultorio acompaña a cada paciente con información clara antes de cada tratamiento. Puedes agendar una valoración y resolver tus dudas sin costo.</p>
+      <div class="about2-list">
+        <div class="about2-item"><div class="ic"><svg class="icon" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><span>Ortopedia infantil</span></div>
+        <div class="about2-item"><div class="ic"><svg class="icon" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></div><span>Retiro de aparatos</span></div>
+        <div class="about2-item"><div class="ic"><svg class="icon" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5c0 3 2 4 2 7 0 3-1.5 3.5-1.5 5.5a1.5 1.5 0 0 0 3 0c0-1 .5-1.5 1.5-1.5s1.5.5 1.5 1.5a1.5 1.5 0 0 0 3 0c0-2-1.5-2.5-1.5-5.5 0-3 2-4 2-7a5 5 0 0 0-5-5z"/></svg></div><span>Brackets fijos</span></div>
+        <div class="about2-item"><div class="ic"><svg class="icon" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg></div><span>Agenda en línea</span></div>
+      </div>
+      <button class="btn primary" onclick="ChatWidget.open()">Agendar valoración<svg class="icon" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
     </div>
   </div>
 </section>
 
-<section class="contact" id="contacto">
-  <div class="wrap contact-grid">
-    <div class="info-card reveal">
-      <span class="badge-eyebrow">Contacto</span>
-      <h2 style="font-size:24px;margin-bottom:18px;">Visítanos o escríbenos</h2>
-
-      <div class="info-row">
-        <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-6.6 7-12a7 7 0 10-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg></div>
-        <div><b>Dirección</b><span>Cra. 13 #17-64, San Gil, Santander</span></div>
-      </div>
-
-      <div class="info-row">
-        <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
-        <div>
-          <b>Horario de atención</b>
-          <table class="hours-table">
-            <tr><td>Lunes a viernes</td><td>8:00 a.m. – 6:00 p.m.</td></tr>
-            <tr><td>Sábados</td><td>8:00 a.m. – 12:00 m.</td></tr>
-            <tr><td>Domingos</td><td>Cerrado</td></tr>
-          </table>
-        </div>
-      </div>
-
-      <div class="info-row">
-        <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5c0 8 7 15 15 15l3-4-6-2-2 2c-2-1-4-3-5-5l2-2-2-6z"/></svg></div>
-        <div><b>Teléfono / WhatsApp</b><span>320 326 3703</span></div>
-      </div>
-
-      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:20px;" onclick="ChatWidget.open()">💬 Agendar por chat</button>
+<section class="section" id="instalaciones">
+  <div class="container">
+    <p class="eyebrow"><span class="rule"></span>Instalaciones</p>
+    <h2 style="font-size:30px;margin-bottom:10px">Un espacio pensado para tu comodidad</h2>
+    <p style="color:var(--ink-soft);font-size:15px;max-width:56ch;margin-bottom:var(--sp-6)">Visítanos en nuestras instalaciones en San Gil, Santander. Esta galería se completa a medida que el consultorio sume más fotos propias.</p>
+    <div class="gallery">
+      <div class="g main"><img src="/img/fachada-consultorio.jpg" alt="Fachada del consultorio" loading="lazy"><span class="tag"><svg class="icon" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>Fachada</span></div>
+      <div class="g ph"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><span>Recepción</span></div>
+      <div class="g ph"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><span>Sala de espera</span></div>
+      <div class="g ph"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><span>Consultorio</span></div>
+      <div class="g ph"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><span>Esterilización</span></div>
     </div>
+    <p class="note">Marcadores con ícono = espacio reservado para fotos que aún faltan por tomar.</p>
+  </div>
+</section>
 
-    <div class="map-card reveal">
-      <!-- Embed gratuito de Google Maps (sin API key) sobre la direccion real del consultorio -->
-      <iframe
-        title="Ubicación del consultorio en Google Maps"
-        src="https://www.google.com/maps?q=Cra.+13+%2317-64,+San+Gil,+Santander,+Colombia&output=embed"
-        loading="lazy"
-        referrerpolicy="no-referrer-when-downgrade">
-      </iframe>
+<section class="section" id="resultados" style="background:var(--surface-2)">
+  <div class="container" style="max-width:980px">
+    <p class="eyebrow"><span class="rule"></span>Resultados</p>
+    <h2 style="font-size:30px;margin-bottom:var(--sp-6)">Sonrisas reales, cuidadas de cerca</h2>
+    <div class="res-strip">
+      <div class="res-row reveal">
+        <div class="half before"><span class="lab">Antes</span><img src="/img/resultados/antes1.jpg" alt="Antes del tratamiento" loading="lazy"></div>
+        <div class="half after"><span class="lab">Después</span><img src="/img/resultados/despues1.jpg" alt="Después del tratamiento" loading="lazy"></div>
+      </div>
+      <div class="res-row reveal">
+        <div class="half before"><span class="lab">Antes</span><img src="/img/resultados/antes2.jpg" alt="Antes del tratamiento" loading="lazy"></div>
+        <div class="half after"><span class="lab">Después</span><img src="/img/resultados/despues2.jpg" alt="Después del tratamiento" loading="lazy"></div>
+      </div>
+      <div class="res-row reveal">
+        <div class="half before"><span class="lab">Antes</span><img src="/img/resultados/antes3.jpg" alt="Antes del tratamiento" loading="lazy"></div>
+        <div class="half after"><span class="lab">Después</span><img src="/img/resultados/despues3.jpg" alt="Después del tratamiento" loading="lazy"></div>
+      </div>
+      <div class="res-row reveal">
+        <div class="half before"><span class="lab">Antes</span><img src="/img/resultados/antes4.jpg" alt="Antes del tratamiento" loading="lazy"></div>
+        <div class="half after"><span class="lab">Después</span><img src="/img/resultados/despues4.jpg" alt="Después del tratamiento" loading="lazy"></div>
+      </div>
+    </div>
+    <p class="note">Fotos publicadas con autorización del paciente.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <p class="eyebrow"><span class="rule"></span>Preguntas frecuentes</p>
+    <h2 style="font-size:28px;margin-bottom:var(--sp-6)">Resolvemos tus dudas</h2>
+    <div class="faq">
+      <details open><summary>¿Cuánto dura un tratamiento de ortodoncia?<svg class="icon chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary><p>Depende del caso; en la valoración inicial te damos un tiempo estimado y un plan con costos definidos desde el inicio.</p></details>
+      <details><summary>¿La primera cita tiene costo?<svg class="icon chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary><p>La valoración inicial define el diagnóstico y el plan de tratamiento más adecuado para tu caso.</p></details>
+      <details><summary>¿Atienden niños y adolescentes?<svg class="icon chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary><p>Sí, ofrecemos ortopedia dentofacial para guiar el crecimiento óseo y dental en pacientes jóvenes.</p></details>
+      <details><summary>¿Cómo agendo una cita?<svg class="icon chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></summary><p>Por chat de WhatsApp o desde la agenda en línea del sitio; te confirmamos disponibilidad la misma semana.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="contacto" style="background:var(--surface-2)">
+  <div class="container">
+    <p class="eyebrow"><span class="rule"></span>Contacto</p>
+    <h2 style="font-size:30px;margin-bottom:var(--sp-6)">Visítanos o escríbenos</h2>
+    <div class="contact-wrap">
+      <div class="mapph">
+        <iframe
+          title="Ubicación del consultorio en Google Maps"
+          src="https://www.google.com/maps?q=Cra.+13+%2317-64,+San+Gil,+Santander,+Colombia&output=embed"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+      </div>
+      <div class="info">
+        <div class="infoline">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+          <div><b>Dirección</b><span>Cra. 13 #17-64, San Gil, Santander</span></div>
+        </div>
+        <div class="infoline">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <div>
+            <b>Horario de atención</b>
+            <table class="hours-table">
+              <tr><td>Lunes a viernes</td><td>8:00 a.m. – 6:00 p.m.</td></tr>
+              <tr><td>Sábados</td><td>8:00 a.m. – 12:00 m.</td></tr>
+              <tr><td>Domingos</td><td>Cerrado</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="infoline">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></svg>
+          <div><b>Teléfono / WhatsApp</b><span>320 326 3703</span></div>
+        </div>
+        <button class="btn primary" style="margin-top:var(--sp-5);width:100%;justify-content:center" onclick="ChatWidget.open()">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+          Agendar por chat
+        </button>
+      </div>
     </div>
   </div>
 </section>
 
 <footer>
-  <div class="wrap">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <div class="logo-dot">LG</div>
-        <div>
-          <b>Odontología Especializada</b><br>
-          <span style="font-size:12px;color:#C9BBA3;">Dra. Lyda Paola González Angulo</span>
-        </div>
+  <div class="container">
+    <div class="inner">
+      <div class="brand">
+        <div class="brandmark" style="width:32px;height:32px;font-size:12px">LG</div>
+        <div class="brandtext"><strong>Odontología Especializada</strong><span>Dra. Lyda Paola González Angulo · San Gil, Santander</span></div>
       </div>
       <div class="footer-links">
         <a href="#servicios">Servicios</a>
@@ -228,8 +278,8 @@
       </div>
     </div>
     <div class="footer-bottom">
-      <span>© 2026 Odontología Especializada · San Gil, Santander</span>
-      <span>Proyecto Integrador III · Sonrisa Digital · UPB Bucaramanga</span>
+      <span class="muted">© 2026 Odontología Especializada · San Gil, Santander</span>
+      <span class="muted">Proyecto Integrador III · Sonrisa Digital · UPB Bucaramanga</span>
     </div>
   </div>
 </footer>

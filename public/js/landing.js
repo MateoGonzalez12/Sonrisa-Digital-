@@ -3,18 +3,18 @@
 // (los cambios en el catalogo se reflejan de inmediato).
 const ICONOS_PROCEDIMIENTO = {
   "Plan de tratamiento":
-    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><path d="M8 16l2 2 4-4"/></svg>',
+    '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><path d="M8 16l2 2 4-4"/></svg>',
   "Brackets fijos":
-    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14c2-7 14-7 16 0"/><circle cx="6.5" cy="14" r="1.2" fill="currentColor" stroke="none"/><circle cx="10.5" cy="11.6" r="1.2" fill="currentColor" stroke="none"/><circle cx="14.5" cy="11" r="1.2" fill="currentColor" stroke="none"/><circle cx="18" cy="12.8" r="1.2" fill="currentColor" stroke="none"/></svg>',
+    '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14c2-7 14-7 16 0"/><circle cx="6.5" cy="14" r="1.2" fill="currentColor" stroke="none"/><circle cx="10.5" cy="11.6" r="1.2" fill="currentColor" stroke="none"/><circle cx="14.5" cy="11" r="1.2" fill="currentColor" stroke="none"/><circle cx="18" cy="12.8" r="1.2" fill="currentColor" stroke="none"/></svg>',
   "Alineadores transparentes":
-    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9c2-3 14-3 16 0v3c-2 3-14 3-16 0z"/></svg>',
+    '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9c2-3 14-3 16 0v3c-2 3-14 3-16 0z"/></svg>',
   "Ortopedia dentofacial":
-    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4c-2 4-2 12 0 16"/><path d="M18 4c2 4 2 12 0 16"/><path d="M9 12h6"/></svg>',
+    '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4c-2 4-2 12 0 16"/><path d="M18 4c2 4 2 12 0 16"/><path d="M9 12h6"/></svg>',
   "Retiro de aparatos":
-    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 0 5 2.5 5 6 0 3-2 4-2 7 0 2-1 4-3 4s-3-2-3-4c0-3-2-4-2-7 0-3.5 2-6 5-6z"/><path d="M12 13v6M9 17l3 3 3-3"/></svg>',
+    '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 0 5 2.5 5 6 0 3-2 4-2 7 0 2-1 4-3 4s-3-2-3-4c0-3-2-4-2-7 0-3.5 2-6 5-6z"/><path d="M12 13v6M9 17l3 3 3-3"/></svg>',
 };
 const ICONO_DEFAULT =
-  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg>';
+  '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg>';
 
 async function cargarServicios() {
   const contenedor = document.getElementById("serviciosGrid");
@@ -24,29 +24,37 @@ async function cargarServicios() {
 
     procedimientos.forEach((p, i) => {
       const card = document.createElement("div");
-      card.className = "service-card reveal";
+      card.className = "icard reveal";
       card.style.transitionDelay = `${Math.min(i, 5) * 60}ms`;
       card.innerHTML = `
-        <div class="icon-badge">${ICONOS_PROCEDIMIENTO[p.nombre] || ICONO_DEFAULT}</div>
+        <div class="ic">${ICONOS_PROCEDIMIENTO[p.nombre] || ICONO_DEFAULT}</div>
         <h3>${p.nombre}</h3>
         <p>${p.descripcion || ""}</p>
-        <button class="link" type="button">Agendar valoración →</button>
+        <a href="#" role="button">Agendar valoración →</a>
       `;
-      card.querySelector(".link").onclick = () => ChatWidget.open();
+      card.querySelector("a").onclick = (e) => {
+        e.preventDefault();
+        ChatWidget.open();
+      };
       contenedor.appendChild(card);
     });
 
     const cta = document.createElement("div");
-    cta.className = "service-card reveal";
+    cta.className = "icard reveal";
     cta.style.transitionDelay = `${Math.min(procedimientos.length, 5) * 60}ms`;
-    cta.style.cssText +=
-      "display:flex;flex-direction:column;justify-content:center;background:linear-gradient(150deg,var(--gold-light),var(--gold) 55%,var(--gold-dark));color:var(--cream);";
+    cta.style.cssText += "background:var(--ink);border-color:var(--ink);";
     cta.innerHTML = `
-      <h3 style="color:var(--cream);">¿No sabes cuál necesitas?</h3>
-      <p style="color:#F8EFDC;">Cuéntale al asistente qué te preocupa y te orienta.</p>
-      <button class="btn btn-primary" style="background:var(--cream);color:var(--gold-dark);align-self:flex-start;box-shadow:0 8px 18px rgba(0,0,0,.18);" type="button">Hablar con el asistente</button>
+      <div class="ic" style="background:rgba(241,223,184,.16);color:var(--accent-light)">
+        <svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+      </div>
+      <h3 style="color:var(--accent-tint)">¿No sabes cuál necesitas?</h3>
+      <p style="color:#C9BB9C">Cuéntale al asistente qué te preocupa y te orienta.</p>
+      <a href="#" style="color:var(--accent-light)" role="button">Hablar con el asistente</a>
     `;
-    cta.querySelector("button").onclick = () => ChatWidget.open();
+    cta.querySelector("a").onclick = (e) => {
+      e.preventDefault();
+      ChatWidget.open();
+    };
     contenedor.appendChild(cta);
     activarRevelado();
   } catch (err) {
