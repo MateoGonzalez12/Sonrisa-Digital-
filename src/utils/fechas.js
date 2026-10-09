@@ -187,6 +187,16 @@ function extraerFechaHora(texto, referencia = new Date()) {
   return { fecha, hora, fechaHora };
 }
 
+// Convierte un valor recibido por query/body a Date. Las cadenas "YYYY-MM-DD"
+// (sin hora) las interpreta new Date() como medianoche UTC, que en Colombia
+// (UTC-5) cae el dia anterior; aqui se interpretan como fecha local.
+function parsearFecha(valor) {
+  if (valor instanceof Date) return valor;
+  const match = typeof valor === "string" && valor.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return new Date(valor);
+}
+
 function inicioDelDia(fecha) {
   const d = new Date(fecha);
   d.setHours(0, 0, 0, 0);
@@ -217,6 +227,7 @@ module.exports = {
   extraerFecha,
   extraerHora,
   extraerFechaHora,
+  parsearFecha,
   inicioDelDia,
   finDelDia,
   inicioDeLaSemana,

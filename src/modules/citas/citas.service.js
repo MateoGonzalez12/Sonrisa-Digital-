@@ -3,7 +3,7 @@ const { AppError } = require("../../middlewares/errorHandler");
 const { estaDisponible, sugerirAlternativas } = require("./disponibilidad.service");
 const pacientesService = require("../pacientes/pacientes.service");
 const pushService = require("../notificaciones/push/push.service");
-const { inicioDelDia, finDelDia, inicioDeLaSemana } = require("../../utils/fechas");
+const { inicioDelDia, finDelDia, inicioDeLaSemana, parsearFecha } =require("../../utils/fechas");
 
 // El aviso al celular del staff no debe poder tumbar la operacion principal:
 // si el servicio de push falla, la cita igual queda agendada. Por eso se
@@ -192,8 +192,8 @@ async function buscarPorPaciente(termino) {
 // Agenda general del consultorio (todas las citas de todos los
 // odontologos) para un rango de fechas.
 async function agendaGeneral({ desde, hasta }) {
-  const inicio = desde ? inicioDelDia(new Date(desde)) : inicioDelDia(new Date());
-  const fin = hasta ? finDelDia(new Date(hasta)) : finDelDia(new Date(inicio));
+  const inicio = desde ? inicioDelDia(parsearFecha(desde)) : inicioDelDia(new Date());
+  const fin = hasta ? finDelDia(parsearFecha(hasta)) : finDelDia(new Date(inicio));
   return prisma.cita.findMany({
     where: { fechaHora: { gte: inicio, lte: fin } },
     include: INCLUYE_DETALLE,
@@ -240,8 +240,8 @@ async function reporteBasico({ desde, hasta } = {}) {
   const where = {};
   if (desde || hasta) {
     where.fechaHora = {};
-    if (desde) where.fechaHora.gte = inicioDelDia(new Date(desde));
-    if (hasta) where.fechaHora.lte = finDelDia(new Date(hasta));
+    if (desde) where.fechaHora.gte = inicioDelDia(parsearFecha(desde));
+    if (hasta) where.fechaHora.lte = finDelDia(parsearFecha(hasta));
   }
 
   const [porEstado, citas] = await Promise.all([

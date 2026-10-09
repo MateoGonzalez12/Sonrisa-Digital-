@@ -1,6 +1,7 @@
 const asyncHandler = require("../../utils/asyncHandler");
 const { AppError } = require("../../middlewares/errorHandler");
 const citasService = require("../citas/citas.service");
+const { parsearFecha } = require("../../utils/fechas");
 
 // El detalle no expone informacion del paciente mas alla de lo
 // necesario para atenderlo (nombre, cedula, procedimiento y horario).
@@ -16,14 +17,14 @@ function proyectarCitaParaStaff(cita) {
 
 // Citas del dia (solo las del odontologo autenticado).
 const citasDelDia = asyncHandler(async (req, res) => {
-  const fecha = req.query.fecha ? new Date(req.query.fecha) : new Date();
+  const fecha = req.query.fecha ? parsearFecha(req.query.fecha) : new Date();
   const citas = await citasService.agendaDelDia(req.usuario.id, fecha);
   res.json(citas.map(proyectarCitaParaStaff));
 });
 
 // Agenda semanal.
 const citasDeLaSemana = asyncHandler(async (req, res) => {
-  const fecha = req.query.fecha ? new Date(req.query.fecha) : new Date();
+  const fecha = req.query.fecha ? parsearFecha(req.query.fecha) : new Date();
   const dias = await citasService.agendaDeLaSemana(req.usuario.id, fecha);
   res.json(dias.map((d) => ({ fecha: d.fecha, citas: d.citas.map(proyectarCitaParaStaff) })));
 });
