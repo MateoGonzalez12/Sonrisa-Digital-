@@ -85,4 +85,83 @@ async function sugerirAlternativas({ odontologoId, duracionMin, desde = new Date
   return sugerencias;
 }
 
-module.exports = { estaDisponible, sugerirAlternativas, finDeCita };
+function claveDia(fecha) {
+  const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+  const dia = String(fecha.getDate()).padStart(2, "0");
+  return `${fecha.getFullYear()}-${mes}-${dia}`;
+}
+
+function textoHora(minutos) {
+  const h = String(Math.floor(minutos / 60)).padStart(2, "0");
+  const m = String(minutos % 60).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+// Horas libres por dia en un rango (inclusive), en bloques de 30 minutos. Aplica
+// las mismas reglas que estaDisponible (horario laboral, bloqueos, citas
+// PENDIENTE/CONFIRMADA y que la hora no haya pasado) pero con 3 consultas para
+// todo el rango en vez de 3 por cada hora. Solo devuelve horas, nunca datos de
+// pacientes: es lo unico que el selector publico del chatbot necesita.
+// Resultado: { libres: { "2026-10-13": ["08:00", ...] }, horario: { ... } } donde
+// horario trae todas las horas del dia (libres u ocupadas) para poder mostrar
+// cuales estan tomadas.
+async function horasLibresPorDia({ odontologoId, desde, hasta, duracionMin }) {
+  const inicioRango = new Date(desde);
+  inicioRango.setHours(0, 0, 0, 0);
+  const finRango = new Date(hasta);
+  finRango.setHours(23, 59, 59, 999);
+
+  const [horarios, bloqueos, citas] = await Promise.all([
+    prisma.horarioOdontologo.findMany({ where: { odontologoId } }),
+    prisma.bloqueoHorario.findMany({
+      where: {
+        OR: [{ odontologoId }, { odontologoId: null }],
+        inicio: { lt: finRango },
+        fin: { gt: inicioRango },
+      },
+    }),
+    prisma.cita.findMany({
+      where: {
+        odontologoId,
+        estado: { in: ["PENDIENTE", "CONFIRMADA"] },
+        fechaHora: { gte: new Date(inicioRango.getTime() - 24 * 3600000), lte: finRango },
+      },
+      include: { procedimiento: { select: { duracionMin: true } } },
+    }),
+  ]);
+
+  const ocupados = [
+    ...bloqueos.map((b) => [b.inicio.getTime(), b.fin.getTime()]),
+    ...citas.map((c) => [c.fechaHora.getTime(), finDeCita(c.fechaHora, c.procedimiento.duracionMin).getTime()]),
+  ];
+
+  const ahora = Date.now();
+  const libres = {};
+  const horario = {};
+  const dia = new Date(inicioRango);
+  while (dia.getTime() <= finRango.getTime()) {
+    const horas = [];
+    const todas = [];
+    horarios
+      .filter((h) => h.diaSemana === dia.getDay())
+      .forEach((h) => {
+        const finHorario = parseHoraAMinutos(h.horaFin);
+        for (let m = parseHoraAMinutos(h.horaInicio); m + duracionMin <= finHorario; m += 30) {
+          const inicio = new Date(dia);
+          inicio.setHours(0, m, 0, 0);
+          const t0 = inicio.getTime();
+          const t1 = t0 + duracionMin * 60000;
+          todas.push(textoHora(m));
+          if (t0 < ahora) continue;
+          if (ocupados.some(([a, b]) => t0 < b && t1 > a)) continue;
+          horas.push(textoHora(m));
+        }
+      });
+    libres[claveDia(dia)] = horas.sort();
+    horario[claveDia(dia)] = todas.sort();
+    dia.setDate(dia.getDate() + 1);
+  }
+  return { libres, horario };
+}
+
+module.exports = { estaDisponible, sugerirAlternativas, finDeCita, horasLibresPorDia };

@@ -5,6 +5,7 @@ const controller = require("./citas.controller");
 const router = Router();
 
 router.post("/", controller.crear);
+router.get("/disponibilidad", controller.disponibilidad);
 router.get("/buscar", requireRol("admin"), controller.buscar);
 router.get("/lista", requireRol("admin"), controller.listar);
 router.get("/agenda-general", requireRol("admin"), controller.agendaGeneral);
