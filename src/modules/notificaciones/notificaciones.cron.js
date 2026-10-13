@@ -4,21 +4,25 @@ const { enviarRecordatorio } = require("./notificaciones.service");
 
 const ANTICIPACION_HORAS = 24;
 
-// Revisa cada 15 minutos las citas que caen dentro de la ventana de
-// anticipacion configurada y aun no tienen recordatorio enviado.
-async function ejecutarRevisionDeRecordatorios() {
-  const ahora = new Date();
-  const desde = new Date(ahora.getTime() + (ANTICIPACION_HORAS - 0.25) * 3600 * 1000);
+// Citas futuras que faltan menos de ANTICIPACION_HORAS y aun no tienen
+// recordatorio. No es una ventana fija: asi tambien reciben aviso las citas
+// agendadas con menos de 24 h de anticipacion y las que se perdieron si el
+// servidor estuvo dormido en la hora exacta.
+function buscarCitasPorRecordar(ahora = new Date()) {
   const hasta = new Date(ahora.getTime() + ANTICIPACION_HORAS * 3600 * 1000);
-
-  const citas = await prisma.cita.findMany({
+  return prisma.cita.findMany({
     where: {
-      fechaHora: { gte: desde, lte: hasta },
+      fechaHora: { gt: ahora, lte: hasta },
       estado: { in: ["PENDIENTE", "CONFIRMADA"] },
       recordatorioEnviado: false,
     },
     include: { paciente: true, procedimiento: true, odontologo: true },
   });
+}
+
+// Se ejecuta cada 15 minutos.
+async function ejecutarRevisionDeRecordatorios() {
+  const citas = await buscarCitasPorRecordar();
 
   for (const cita of citas) {
     // Eslint-disable-next-line no-await-in-loop
@@ -37,4 +41,4 @@ function iniciarCronRecordatorios() {
   console.log("[cron] Programador de recordatorios de WhatsApp iniciado (cada 15 min).");
 }
 
-module.exports = { iniciarCronRecordatorios, ejecutarRevisionDeRecordatorios };
+module.exports = { iniciarCronRecordatorios, ejecutarRevisionDeRecordatorios, buscarCitasPorRecordar };
