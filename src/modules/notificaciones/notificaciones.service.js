@@ -1,5 +1,6 @@
 const prisma = require("../../db/prisma");
 const proveedorWhatsapp = require("./whatsapp");
+const pushService = require("./push/push.service");
 const { formatFechaHora } = require("../../utils/fechas");
 
 // Si el proveedor de WhatsApp falla, el mensaje se registra igual
@@ -9,10 +10,20 @@ const { formatFechaHora } = require("../../utils/fechas");
 // WhatsApp solo admite texto libre durante las 24 h siguientes al ultimo
 // mensaje del paciente. Se considera abierta la ventana si hay algun mensaje
 // ENTRANTE de ese numero en ese lapso.
+// Un mismo celular llega escrito distinto segun el origen: 3001234567 (guardado
+// en el paciente), 573001234567 (Meta) o +573001234567 (Twilio). Devuelve las
+// variantes para poder emparejarlo en la base.
+function variantesTelefono(telefono) {
+  let digitos = String(telefono || "").replace(/\D/g, "");
+  if (digitos.length === 12 && digitos.startsWith("57")) digitos = digitos.slice(2);
+  if (!/^3\d{9}$/.test(digitos)) return [String(telefono)];
+  return [digitos, `57${digitos}`, `+57${digitos}`];
+}
+
 async function dentroDeVentana24h(telefono) {
   const desde = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const ultimoEntrante = await prisma.mensajeWhatsapp.findFirst({
-    where: { telefono: String(telefono), direccion: "ENTRANTE", createdAt: { gte: desde } },
+    where: { telefono: { in: variantesTelefono(telefono) }, direccion: "ENTRANTE", createdAt: { gte: desde } },
     orderBy: { createdAt: "desc" },
     select: { id: true },
   });
@@ -117,35 +128,43 @@ async function notificarCambioAlPaciente(cita, mensajeExtra) {
   });
 }
 
-// Alerta al personal administrativo cuando el paciente cancela.
-async function alertarAdministrativo(cita, motivo) {
-  const env = require("../../config/env");
-  if (!env.adminWhatsappNumber) return null;
-  const texto =
-    `⚠️ ${motivo}\nPaciente: ${cita.paciente.nombre} (CC ${cita.paciente.cedula})\n` +
-    `Procedimiento: ${cita.procedimiento.nombre}\nHorario liberado: ${formatFechaHora(cita.fechaHora)}`;
-  return enviarYRegistrar({
-    telefono: env.adminWhatsappNumber,
-    texto,
-    citaId: cita.id,
-    tipo: "alerta_admin",
-    plantilla: {
-      nombre: process.env.META_PLANTILLA_ALERTA || "alerta_consultorio",
-      idioma: "es",
-      parametros: [motivo, cita.paciente.nombre, formatFechaHora(cita.fechaHora)],
-    },
+// Interpreta la respuesta del paciente: "CONFIRMAR", "CANCELAR" o null si no
+// esta claro. Es conservador a proposito: una negacion ("no puedo confirmar") o
+// un "no" dentro de una frase no cancela ni confirma nada.
+function clasificarRespuesta(texto) {
+  const t = String(texto || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (/\bcancel/.test(t)) return "CANCELAR";
+  if (/\bconfirm/.test(t)) return /\b(no|nunca|ni)\b/.test(t) ? null : "CONFIRMAR";
+  if (t === "no") return "CANCELAR";
+  if (/^(si|ok|okay|vale|listo|dale|claro)$/.test(t)) return "CONFIRMAR";
+  return null;
+}
+
+// Cita a la que responde el paciente: la del ultimo aviso que se le envio a ese
+// numero; si no hay, la proxima cita activa de un paciente con ese telefono.
+async function buscarCitaDeLaRespuesta(telefono) {
+  const variantes = variantesTelefono(telefono);
+  const activa = { estado: { in: ["PENDIENTE", "CONFIRMADA"] }, fechaHora: { gte: new Date() } };
+  const incluir = { paciente: true, procedimiento: true, odontologo: true };
+
+  const ultimoAviso = await prisma.mensajeWhatsapp.findFirst({
+    where: { telefono: { in: variantes }, direccion: "SALIENTE", cita: activa },
+    orderBy: { createdAt: "desc" },
+    select: { citaId: true },
   });
-}
+  if (ultimoAviso) return prisma.cita.findUnique({ where: { id: ultimoAviso.citaId }, include: incluir });
 
-// Confirmación de la cita agendada por el cliente
-function textoConfirma(texto) {
-  const t = texto.trim().toLowerCase();
-  return /(confirm|si\b|sí|ok|vale)/.test(t);
-}
-
-function textoCancela(texto) {
-  const t = texto.trim().toLowerCase();
-  return /(cancel|no\b)/.test(t);
+  return prisma.cita.findFirst({
+    where: { ...activa, paciente: { telefono: { in: variantes } } },
+    orderBy: { fechaHora: "asc" },
+    include: incluir,
+  });
 }
 
 // Procesa la respuesta entrante del paciente por WhatsApp para
@@ -153,19 +172,20 @@ function textoCancela(texto) {
 // no se modifica el estado de la cita.
 async function procesarRespuestaEntrante({ telefono, texto }) {
   const citasService = require("../citas/citas.service");
-  const paciente = await prisma.paciente.findFirst({ where: { telefono } });
   await registrarMensajeEntrante({ telefono, texto });
-  if (!paciente) return { entendido: false };
 
-  const cita = await prisma.cita.findFirst({
-    where: { pacienteId: paciente.id, estado: { in: ["PENDIENTE", "CONFIRMADA"] }, fechaHora: { gte: new Date() } },
-    orderBy: { fechaHora: "asc" },
-    include: { paciente: true, procedimiento: true, odontologo: true },
-  });
+  const respuesta = clasificarRespuesta(texto);
+  if (!respuesta) return { entendido: false };
+
+  const cita = await buscarCitaDeLaRespuesta(telefono);
   if (!cita) return { entendido: false };
 
-  if (textoConfirma(texto)) {
+  if (respuesta === "CONFIRMAR") {
     const actualizada = await citasService.confirmarCita(cita.id);
+    // Push a la doctora; si falla no debe afectar la respuesta al paciente.
+    pushService.avisarCitaConfirmada(actualizada).catch((err) =>
+      console.error("[push] no se pudo avisar la confirmacion:", err.message)
+    );
     await enviarYRegistrar({
       telefono,
       texto: `Tu cita del ${formatFechaHora(actualizada.fechaHora)} quedo confirmada ✅`,
@@ -175,7 +195,7 @@ async function procesarRespuestaEntrante({ telefono, texto }) {
     return { entendido: true, accion: "confirmada", cita: actualizada };
   }
 
-  if (textoCancela(texto)) {
+  if (respuesta === "CANCELAR") {
     const actualizada = await citasService.cancelarCita(cita.id);
     await enviarYRegistrar({
       telefono,
@@ -183,7 +203,7 @@ async function procesarRespuestaEntrante({ telefono, texto }) {
       citaId: cita.id,
       tipo: "cancelacion",
     });
-    await alertarAdministrativo(actualizada, "El paciente cancelo su cita por WhatsApp.");
+    // La cancelacion ya avisa a la doctora por push desde citasService.cancelarCita.
     return { entendido: true, accion: "cancelada", cita: actualizada };
   }
 
@@ -195,6 +215,8 @@ module.exports = {
   registrarMensajeEntrante,
   enviarRecordatorio,
   notificarCambioAlPaciente,
-  alertarAdministrativo,
   procesarRespuestaEntrante,
+  clasificarRespuesta,
+  buscarCitaDeLaRespuesta,
+  variantesTelefono,
 };

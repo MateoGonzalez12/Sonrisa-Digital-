@@ -38,7 +38,8 @@ app.use(
 );
 app.use(cors({ origin: env.corsOrigin, credentials: true }));
 app.use(morgan("dev"));
-app.use(express.json());
+// rawBody: Meta firma el cuerpo exacto del webhook y la firma se valida contra ese texto.
+app.use(express.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));
 app.use(express.urlencoded({ extended: true })); // Twilio envia el webhook como form-urlencoded
 
 app.get("/api/salud", (req, res) => res.json({ ok: true, servicio: "sonrisa-digital-api" }));

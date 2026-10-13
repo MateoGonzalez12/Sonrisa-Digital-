@@ -11,8 +11,9 @@ router.post("/push/suscribir", requireRol("staff"), push.suscribir);
 router.post("/push/desuscribir", requireRol("staff"), push.desuscribir);
 router.post("/push/probar", requireRol("staff"), push.probar);
 
-// Configura esta URL como "webhook de mensajes entrantes" en la consola de
-// Twilio (Sandbox de WhatsApp) -> https://tu-dominio/api/notificaciones/webhook
+// Misma URL para Meta (WhatsApp -> Configuracion -> Webhook) y Twilio:
+// https://tu-dominio/api/notificaciones/webhook. El GET es la verificacion de Meta.
+router.get("/webhook", controller.verificarWebhook);
 router.post("/webhook", controller.webhookEntrante);
 
 router.get("/", requireRol("admin"), controller.listarMensajes);

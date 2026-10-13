@@ -118,6 +118,15 @@ async function avisarCitaReprogramada(cita) {
   });
 }
 
+async function avisarCitaConfirmada(cita) {
+  return enviarA(cita.odontologoId, {
+    titulo: "Cita confirmada",
+    cuerpo: `${cita.paciente.nombre} confirmo su cita del ${formatearHora(cita.fechaHora)}`,
+    url: "/agenda/hoy.html",
+    tag: `cita-${cita.id}`,
+  });
+}
+
 // Permite que la API responda con un error claro en vez de decir "enviado"
 // cuando en realidad no hay claves VAPID en el servidor.
 function estaConfigurado() {
@@ -132,4 +141,5 @@ module.exports = {
   avisarCitaNueva,
   avisarCitaCancelada,
   avisarCitaReprogramada,
+  avisarCitaConfirmada,
 };

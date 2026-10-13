@@ -79,6 +79,7 @@ const ChatWidget = (function () {
     let filas = "";
     if (datos.paciente) filas += `<div class="row"><span>Paciente</span><b>${datos.paciente}</b></div>`;
     if (datos.cedula) filas += `<div class="row"><span>Cédula</span><b>${datos.cedula}</b></div>`;
+    if (datos.telefono) filas += `<div class="row"><span>WhatsApp</span><b>${datos.telefono}</b></div>`;
     if (datos.procedimiento) filas += `<div class="row"><span>Procedimiento</span><b>${datos.procedimiento}</b></div>`;
     if (datos.fechaHora) filas += `<div class="row"><span>Fecha y hora</span><b>${datos.fechaHora}</b></div>`;
     if (datos.estado) filas += `<div class="row"><span>Estado</span><span class="status-pill ${estadoClase}">${datos.estado}</span></div>`;

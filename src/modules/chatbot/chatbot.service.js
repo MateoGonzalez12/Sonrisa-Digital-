@@ -24,6 +24,18 @@ function limpiarCedula(valor) {
   return String(valor || "").replace(/\D/g, "");
 }
 
+// Celular colombiano: 10 digitos que empiezan por 3 (acepta +57/57 al inicio).
+// Devuelve los 10 digitos o null si no es valido.
+function normalizarCelular(valor) {
+  let digitos = limpiarCedula(valor);
+  if (digitos.length === 12 && digitos.startsWith("57")) digitos = digitos.slice(2);
+  return /^3\d{9}$/.test(digitos) ? digitos : null;
+}
+
+function formatearCelular(celular) {
+  return `${celular.slice(0, 3)} ${celular.slice(3, 6)} ${celular.slice(6)}`;
+}
+
 // El catalogo de procedimientos se consulta en casi todos los pasos de la
 // conversacion, pero cambia muy rara vez (lo edita el admin de vez en cuando).
 // Guardarlo un minuto evita una consulta remota por mensaje sin que el chatbot
@@ -229,9 +241,12 @@ async function pasoAgendarCedula(estado, mensaje) {
 }
 
 async function pasoAgendarTelefono(estado, mensaje) {
-  const telefono = limpiarCedula(mensaje);
-  if (telefono.length < 7) {
-    return { estado, respuestas: [texto("Ese numero no parece valido. ¿Puedes escribirlo de nuevo? (ej: 3001234567)")] };
+  const telefono = normalizarCelular(mensaje);
+  if (!telefono) {
+    return {
+      estado,
+      respuestas: [texto("Ese no parece un celular valido. Escribelo con 10 digitos, empezando por 3 (ej: 3001234567).")],
+    };
   }
   estado.datos.telefono = telefono;
 
@@ -383,6 +398,7 @@ async function pasoAgendarFechaHora(estado, mensaje) {
       tarjeta(null, {
         paciente: estado.datos.nombre,
         cedula: estado.datos.cedula,
+        telefono: formatearCelular(estado.datos.telefono),
         procedimiento: procedimiento.nombre,
         fechaHora: formatFechaHora(fechaHora),
         estado: "Pendiente",
@@ -412,7 +428,7 @@ async function pasoAgendarConfirmar(estado, mensaje) {
     origen: "chatbot",
   });
 
-  await notificaciones.enviarYRegistrar({
+  const envio = await notificaciones.enviarYRegistrar({
     telefono: cita.paciente.telefono,
     texto: `¡Hola ${cita.paciente.nombre.split(" ")[0]}! Tu cita de ${cita.procedimiento.nombre} quedo agendada para el ${formatFechaHora(cita.fechaHora)}. Te avisaremos un dia antes 🦷`,
     citaId: cita.id,
@@ -437,7 +453,12 @@ async function pasoAgendarConfirmar(estado, mensaje) {
   return {
     estado,
     respuestas: [
-      texto("¡Tu cita quedo agendada! ✅ Te llegara un mensaje de WhatsApp para confirmarla y luego un recordatorio antes de la fecha."),
+      // Sin id de proveedor = Meta no acepto el mensaje (numero sin WhatsApp o mal escrito).
+      texto(
+        envio.proveedorMessageId
+          ? "¡Tu cita quedo agendada! ✅ Te llegara un mensaje de WhatsApp para confirmarla y luego un recordatorio antes de la fecha."
+          : `Tu cita quedo agendada ✅, pero no pude enviar el WhatsApp al ${formatearCelular(cita.paciente.telefono || "")}. Si el numero esta mal, avisanos en el consultorio para corregirlo.`
+      ),
       tarjeta(null, {
         procedimiento: cita.procedimiento.nombre,
         fechaHora: formatFechaHora(cita.fechaHora),
@@ -592,8 +613,7 @@ async function pasoCancelarConfirmar(estado, mensaje) {
     return { estado, respuestas: [texto("Tu cita se mantiene sin cambios. 🙂")] };
   }
 
-  const cita = await citasService.cancelarCita(estado.datos.citaIdEnCurso);
-  await notificaciones.alertarAdministrativo(cita, "El paciente cancelo su cita desde el chatbot.");
+  await citasService.cancelarCita(estado.datos.citaIdEnCurso); // avisa a la doctora por push
 
   estado.paso = "ESPERANDO_INTENCION";
   estado.datos = { ...conversaciones.ESTADO_INICIAL.datos };

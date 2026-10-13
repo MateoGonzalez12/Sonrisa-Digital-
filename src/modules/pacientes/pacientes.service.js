@@ -18,7 +18,8 @@ async function buscarOCrearPaciente({ nombre, cedula, telefono }) {
 
   const existente = await prisma.paciente.findUnique({ where: { cedula: cedulaLimpia } });
   if (existente) {
-    if (telefono && !existente.telefono) {
+    // El telefono escrito en la ultima cita confirmada es el vigente.
+    if (telefono && telefono !== existente.telefono) {
       return prisma.paciente.update({ where: { id: existente.id }, data: { telefono } });
     }
     return existente;
