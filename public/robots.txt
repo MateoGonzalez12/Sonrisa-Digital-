@@ -1,9 +1,11 @@
 User-agent: *
 Allow: /
 
-# Panel administrativo, agenda movil y backend: no deben aparecer en Google.
-Disallow: /admin/
-Disallow: /agenda/
+# /admin/ y /agenda/ no se bloquean aqui a proposito: el servidor las marca con
+# "X-Robots-Tag: noindex", y Google solo lo lee si puede entrar a la pagina.
+# Bloquearlas con Disallow haria que se indexaran sin contenido.
+
+# Backend: no debe aparecer en Google.
 Disallow: /api/
 
 # La landing carga la lista de servicios desde esta ruta; sin permitirla,

@@ -56,6 +56,13 @@ app.use("/api/notificaciones", notificacionesRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/agenda-movil", agendaMovilRoutes);
 
+// Panel admin y agenda movil: Google puede leerlos pero no debe indexarlos.
+// (robots.txt no basta: una URL bloqueada igual se indexa si alguien la enlaza.)
+app.use(["/admin", "/agenda"], (req, res, next) => {
+  res.set("X-Robots-Tag", "noindex, nofollow");
+  next();
+});
+
 // Frontend estatico (landing + panel admin + agenda movil)
 app.use(express.static(path.join(__dirname, "..", "public")));
 
