@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "build": "prisma generate && prisma migrate deploy",
     "start": "node src/server.js",
+    "test": "node --test --test-reporter=spec \"tests/**/*.test.js\"",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
