@@ -15,6 +15,45 @@ function required(name, fallback) {
   return value;
 }
 
+const NODE_ENV = process.env.NODE_ENV || "development";
+const esProduccion = NODE_ENV === "production";
+// Dos valores distintos a rechazar: el fallback interno de required() mas
+// abajo, y el que trae .env.example (el que la gente copia y a veces olvida
+// cambiar - es el caso real que mas ha pasado en este proyecto).
+const JWT_SECRETS_INSEGUROS = ["clave-dev-insegura-cambiar", "cambia-esto-por-una-clave-larga-y-aleatoria"];
+const JWT_SECRET_LONGITUD_MINIMA = 20;
+
+// En produccion, un JWT_SECRET o CORS_ORIGIN sin configurar no es un detalle
+// menor: con el secreto de ejemplo (publico en .env.example) cualquiera puede
+// forjar un token de admin valido, y sin CORS_ORIGIN la API queda abierta a
+// cualquier origen. Por eso aqui se aborta el arranque en vez de solo avisar.
+function validarConfiguracionCritica() {
+  if (!esProduccion) return;
+
+  const jwtSecret = (process.env.JWT_SECRET || "").trim();
+  if (
+    !jwtSecret ||
+    JWT_SECRETS_INSEGUROS.includes(jwtSecret) ||
+    jwtSecret.length < JWT_SECRET_LONGITUD_MINIMA
+  ) {
+    throw new Error(
+      "[config] JWT_SECRET no esta configurado, sigue siendo el valor de ejemplo, o es demasiado corto " +
+        `(minimo ${JWT_SECRET_LONGITUD_MINIMA} caracteres). Define una cadena larga y aleatoria en las ` +
+        "variables de entorno de produccion antes de arrancar."
+    );
+  }
+
+  const corsOrigin = (process.env.CORS_ORIGIN || "").trim();
+  if (!corsOrigin) {
+    throw new Error(
+      "[config] CORS_ORIGIN no esta configurado. En produccion es obligatorio fijar el dominio real " +
+        "(ej. https://tudominio.com) para no dejar la API abierta a cualquier origen."
+    );
+  }
+}
+
+validarConfiguracionCritica();
+
 // Origenes permitidos para CORS. En desarrollo se deja abierto; en produccion
 // se restringe a los dominios declarados en CORS_ORIGIN (separados por coma)
 // para que ningun sitio de terceros pueda consumir la API con el token del
@@ -26,6 +65,7 @@ function origenesPermitidos() {
 }
 
 module.exports = {
+  nodeEnv: NODE_ENV,
   port: Number(process.env.PORT) || 3000,
   databaseUrl: required("DATABASE_URL"),
   jwtSecret: required("JWT_SECRET", "clave-dev-insegura-cambiar"),
