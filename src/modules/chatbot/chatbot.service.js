@@ -7,6 +7,7 @@ const procedimientosService = require("../procedimientos/procedimientos.service"
 const citasService = require("../citas/citas.service");
 const { estaDisponible, sugerirAlternativas } = require("../citas/disponibilidad.service");
 const notificaciones = require("../notificaciones/notificaciones.service");
+const pushService = require("../notificaciones/push/push.service");
 
 const MAX_INTENTOS_FALLIDOS = 3;
 
@@ -99,14 +100,108 @@ const RE_INTENCION_AGENDAR = /\b(agendar|agendame|agendarme|agenda|reservar|sepa
 // alguno de ellos.
 const RE_VOLVER_A_LISTA = /(ver todos|todos los procedimientos|otros procedimientos|otro procedimiento|ver la lista|volver a la lista|consultar procedimientos|ver procedimientos|que procedimientos|lista de procedimientos)/;
 
-// Tras N intentos sin entender al paciente, deriva a un humano y da un
-// mensaje claro, sin dejar la conversacion bloqueada.
-function mensajeDerivacionHumana() {
-  return texto(
-    "No logro entender bien tu solicitud 😅. Te voy a comunicar con una persona del consultorio, " +
-      "que te escribira pronto. Tambien puedes llamarnos/escribirnos directo al *320 326 3703*.",
-    ["Agendar una cita", "Consultar procedimientos", "Ver mis citas"]
-  );
+// El paciente vio una cita que no es suya porque escribio mal la cedula y avisa
+// del error ("me equivoque", "esa no es mi cedula"...).
+const RE_CEDULA_EQUIVOCADA = /(equivoq|equivoc|no es mi (cedula|cita|documento|numero)|esa no es (mi|la)|esa cita no es|(cedula|documento|numero) (incorrect|erronea|mala|mal )|otra cedula|escribi mal|digite mal|mal escrit)/;
+
+function dijoQueSeEquivoco(mensaje) {
+  return RE_CEDULA_EQUIVOCADA.test(quitarTildes(String(mensaje || "")));
+}
+
+// Descarta la cita encontrada y vuelve a pedir la cedula en el mismo flujo.
+function volverAPedirCedula(estado, pasoCedula) {
+  estado.datos.citaIdEnCurso = null;
+  estado.datos.procedimientoIdCitaEnCurso = null;
+  estado.datos.fechaHora = null;
+  estado.paso = pasoCedula;
+  return {
+    estado,
+    respuestas: [texto("Sin problema 🙂 Escribe de nuevo tu numero de *cedula* para buscar tu cita.")],
+  };
+}
+
+// Derivacion a una persona: se piden nombre y celular y se avisa a la doctora
+// por push, para que prometer "te escribiran" sea cierto. Se llega aqui cuando
+// el paciente lo pide o tras N intentos sin entenderlo.
+const RE_SALIR_DERIVACION = /^(no|no gracias|nada|cancelar|olvidalo|mejor no|ya no|volver|menu)$/;
+const OPCION_SALIR_DERIVACION = "No, gracias";
+
+function quiereSalirDeDerivacion(mensaje) {
+  return RE_SALIR_DERIVACION.test(quitarTildes(String(mensaje || "")).replace(/[^a-z\s]/g, "").trim());
+}
+
+function iniciarDerivacion(estado, mensaje, porNoEntender = false) {
+  estado.intentosFallidos = 0;
+  estado.paso = "DERIVAR_NOMBRE";
+  estado.datos.derivNombre = "";
+  estado.datos.derivMotivo = String(mensaje || "").trim().slice(0, 120);
+  const intro = porNoEntender
+    ? "No logro entender bien tu solicitud 😅. Te comunico con una persona del consultorio."
+    : "Con gusto 🙋";
+  return {
+    estado,
+    respuestas: [texto(`${intro} Para que la doctora te escriba, ¿cual es tu *nombre*?`, [OPCION_SALIR_DERIVACION])],
+  };
+}
+
+function salirDeDerivacion(estado) {
+  estado.paso = "ESPERANDO_INTENCION";
+  estado.datos = { ...conversaciones.ESTADO_INICIAL.datos };
+  return { estado, respuestas: [menuInicial(false)] };
+}
+
+async function pasoDerivarNombre(estado, mensaje) {
+  if (quiereSalirDeDerivacion(mensaje)) return salirDeDerivacion(estado);
+
+  const nombre = mensaje.trim();
+  if (nombre.length < 3) {
+    return { estado, respuestas: [texto("¿Me escribes tu *nombre*?", [OPCION_SALIR_DERIVACION])] };
+  }
+  estado.datos.derivNombre = nombre.slice(0, 80);
+  estado.paso = "DERIVAR_CELULAR";
+  return {
+    estado,
+    respuestas: [texto(`Gracias, ${nombre.split(" ")[0]}. ¿A que numero de *celular* te escribimos?`, [OPCION_SALIR_DERIVACION])],
+  };
+}
+
+async function pasoDerivarCelular(estado, mensaje) {
+  if (quiereSalirDeDerivacion(mensaje)) return salirDeDerivacion(estado);
+
+  const celular = normalizarCelular(mensaje);
+  if (!celular) {
+    return {
+      estado,
+      respuestas: [texto("Ese no parece un celular valido. Escribelo con 10 digitos, empezando por 3 (ej: 3001234567).", [OPCION_SALIR_DERIVACION])],
+    };
+  }
+
+  // Si el aviso no sale (sin push configurado o sin dispositivos) no se le
+  // promete nada al paciente: se le dice que llame.
+  let avisada = false;
+  try {
+    const odontologo = await citasService.obtenerOdontologoPorDefecto();
+    const { enviadas } = await pushService.avisarDerivacionHumana({
+      odontologoId: odontologo.id,
+      nombre: estado.datos.derivNombre,
+      celular: formatearCelular(celular),
+      motivo: estado.datos.derivMotivo,
+    });
+    avisada = enviadas > 0;
+  } catch (err) {
+    console.error("[chatbot] no se pudo avisar la derivacion:", err.message);
+  }
+
+  estado.paso = "ESPERANDO_INTENCION";
+  estado.datos = { ...conversaciones.ESTADO_INICIAL.datos };
+
+  const mensajeFinal = avisada
+    ? `Listo ✅ Le avise a la doctora. Te escribira al *${formatearCelular(celular)}* lo antes posible. Si es urgente, llamanos al *320 326 3703*.`
+    : `Anote tus datos, pero no pude avisar de inmediato 😕. Por favor llamanos o escribenos al *320 326 3703* y te atendemos.`;
+  return {
+    estado,
+    respuestas: [texto(mensajeFinal, ["Agendar una cita", "Consultar procedimientos", "Ver mis citas"])],
+  };
 }
 
 function menuInicial(saludo = true) {
@@ -116,12 +211,10 @@ function menuInicial(saludo = true) {
   return texto(intro, ["Agendar una cita", "Ver mis citas", "Consultar procedimientos"]);
 }
 
-async function manejarAmbiguo(estado) {
+async function manejarAmbiguo(estado, mensaje) {
   estado.intentosFallidos = (estado.intentosFallidos || 0) + 1;
   if (estado.intentosFallidos >= MAX_INTENTOS_FALLIDOS) {
-    estado.intentosFallidos = 0;
-    estado.paso = "ESPERANDO_INTENCION";
-    return { estado, respuestas: [mensajeDerivacionHumana()] };
+    return iniciarDerivacion(estado, mensaje, true);
   }
   return {
     estado,
@@ -206,10 +299,10 @@ async function pasoEsperandoIntencion(estado, mensaje) {
       };
 
     case "DERIVAR_HUMANO":
-      return { estado, respuestas: [mensajeDerivacionHumana()] };
+      return iniciarDerivacion(estado, mensaje);
 
     default:
-      return manejarAmbiguo(estado);
+      return manejarAmbiguo(estado, mensaje);
   }
 }
 
@@ -533,6 +626,8 @@ async function pasoReprogramarCedula(estado, mensaje) {
 }
 
 async function pasoReprogramarFechaHora(estado, mensaje) {
+  if (dijoQueSeEquivoco(mensaje)) return volverAPedirCedula(estado, "REPROGRAMAR_CEDULA");
+
   const { fechaHora } = extraerEntidades(mensaje);
   if (!fechaHora) {
     return { estado, respuestas: [texto('No logre identificar la fecha/hora. Intenta con algo como "viernes 10:00 a.m."')] };
@@ -554,6 +649,8 @@ async function pasoReprogramarFechaHora(estado, mensaje) {
 }
 
 async function pasoReprogramarConfirmar(estado, mensaje) {
+  if (dijoQueSeEquivoco(mensaje)) return volverAPedirCedula(estado, "REPROGRAMAR_CEDULA");
+
   const t = mensaje.trim().toLowerCase();
   if (!/(confirm|si\b|sí)/.test(t)) {
     estado.paso = "ESPERANDO_INTENCION";
@@ -607,6 +704,8 @@ async function pasoCancelarCedula(estado, mensaje) {
 }
 
 async function pasoCancelarConfirmar(estado, mensaje) {
+  if (dijoQueSeEquivoco(mensaje)) return volverAPedirCedula(estado, "CANCELAR_CEDULA");
+
   const t = mensaje.trim().toLowerCase();
   if (!/(si|cancel)/.test(t) || /mantener/.test(t)) {
     estado.paso = "ESPERANDO_INTENCION";
@@ -640,6 +739,8 @@ const MANEJADORES = {
   REPROGRAMAR_CONFIRMAR: pasoReprogramarConfirmar,
   CANCELAR_CEDULA: pasoCancelarCedula,
   CANCELAR_CONFIRMAR: pasoCancelarConfirmar,
+  DERIVAR_NOMBRE: pasoDerivarNombre,
+  DERIVAR_CELULAR: pasoDerivarCelular,
 };
 
 async function procesarMensaje({ conversacionId, mensaje, canal = "web" }) {

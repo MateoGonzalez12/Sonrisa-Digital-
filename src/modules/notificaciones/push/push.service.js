@@ -127,6 +127,16 @@ async function avisarCitaConfirmada(cita) {
   });
 }
 
+// El chatbot deriva a una persona: la doctora recibe el contacto para escribirle.
+async function avisarDerivacionHumana({ odontologoId, nombre, celular, motivo }) {
+  return enviarA(odontologoId, {
+    titulo: "Un paciente pide hablar con alguien",
+    cuerpo: `${nombre} - ${celular}${motivo ? `\nDijo: "${motivo}"` : ""}`,
+    url: "/agenda/hoy.html",
+    tag: `derivacion-${celular}`,
+  });
+}
+
 // Permite que la API responda con un error claro en vez de decir "enviado"
 // cuando en realidad no hay claves VAPID en el servidor.
 function estaConfigurado() {
@@ -142,4 +152,5 @@ module.exports = {
   avisarCitaCancelada,
   avisarCitaReprogramada,
   avisarCitaConfirmada,
+  avisarDerivacionHumana,
 };
