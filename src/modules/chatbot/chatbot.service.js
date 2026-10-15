@@ -208,7 +208,7 @@ function menuInicial(saludo = true) {
   const intro = saludo
     ? "¡Hola! 😊 Soy el asistente de agenda de Odontologia Especializada. ¿En que puedo ayudarte hoy?"
     : "¿En que mas puedo ayudarte?";
-  return texto(intro, ["Agendar una cita", "Ver mis citas", "Consultar procedimientos"]);
+  return texto(intro, ["Agendar una cita", "Ver mis citas", "Consultar procedimientos", "Hablar con una persona"]);
 }
 
 async function manejarAmbiguo(estado, mensaje) {
@@ -221,7 +221,7 @@ async function manejarAmbiguo(estado, mensaje) {
     respuestas: [
       texto(
         "No estoy seguro de haber entendido 🤔. ¿Quieres agendar una cita, ver tus citas o consultar procedimientos?",
-        ["Agendar una cita", "Ver mis citas", "Consultar procedimientos"]
+        ["Agendar una cita", "Ver mis citas", "Consultar procedimientos", "Hablar con una persona"]
       ),
     ],
   };

@@ -27,5 +27,6 @@ module.exports = {
   ],
   DERIVAR_HUMANO: [
     "hablar con alguien", "persona real", "asesor", "humano", "quiero hablar con una persona",
+    "hablar con una persona", "servicio al cliente", "atencion al cliente",
   ],
 };
