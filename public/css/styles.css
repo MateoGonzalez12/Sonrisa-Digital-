@@ -172,7 +172,7 @@ nav.links a:hover{color:var(--ink)}
 .gallery .g{border-radius:14px;overflow:hidden;position:relative;border:1px solid var(--line)}
 .gallery .g.main{grid-row:span 2;aspect-ratio:3/4}
 .gallery .g:not(.main){aspect-ratio:1/1}
-.gallery .g img{width:100%;height:100%}
+.gallery .g img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .gallery .g .tag{position:absolute;left:12px;bottom:12px;display:flex;align-items:center;gap:6px;background:rgba(23,17,10,.72);color:#F4ECDA;font-size:11px;padding:6px 12px;border-radius:999px}
 .gallery .g .tag .icon{width:13px;height:13px}
 .gallery .g.ph{background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--ink-faint)}
@@ -180,7 +180,8 @@ nav.links a:hover{color:var(--ink)}
 .gallery .g.ph span{font-size:11px;letter-spacing:.02em}
 .instal-layout{display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:var(--sp-5);align-items:start}
 @media(max-width:860px){.instal-layout{grid-template-columns:1fr}.instal-video{max-width:340px;margin:0 auto}}
-.instal-layout .gallery{grid-template-columns:1fr 1fr}
+.instal-layout .gallery{grid-template-columns:repeat(3,1fr)}
+@media(max-width:860px){.instal-layout .gallery{display:flex;gap:var(--sp-3);overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}.instal-layout .gallery::-webkit-scrollbar{display:none}.instal-layout .gallery .g{flex:0 0 66%;aspect-ratio:3/4;scroll-snap-align:start}}
 @media(min-width:861px){.instal-layout{align-items:stretch}.instal-layout .gallery{grid-auto-rows:1fr}.instal-layout .gallery .g{aspect-ratio:auto}}
 .instal-video{margin:0;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow);background:var(--ink);aspect-ratio:9/16}
 .instal-video video{display:block;width:100%;height:100%;object-fit:cover}
