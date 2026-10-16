@@ -2,16 +2,14 @@
 // siempre muestre lo que hay realmente configurado en el modulo admin
 // (los cambios en el catalogo se reflejan de inmediato).
 const ICONOS_PROCEDIMIENTO = {
-  "Plan de tratamiento":
-    '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><path d="M8 16l2 2 4-4"/></svg>',
-  "Brackets fijos":
+  "Limpieza dental":
+    '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 3.4L17 8l-3.4 1.6L12 13l-1.6-3.4L7 8l3.4-1.6z"/><path d="M18 14l.8 1.7 1.7.8-1.7.8L18 19l-.8-1.7-1.7-.8 1.7-.8z"/><path d="M6 15l.6 1.3 1.3.6-1.3.6L6 19l-.6-1.3L4 17.1l1.4-.6z"/></svg>',
+  "Ortodoncia":
     '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14c2-7 14-7 16 0"/><circle cx="6.5" cy="14" r="1.2" fill="currentColor" stroke="none"/><circle cx="10.5" cy="11.6" r="1.2" fill="currentColor" stroke="none"/><circle cx="14.5" cy="11" r="1.2" fill="currentColor" stroke="none"/><circle cx="18" cy="12.8" r="1.2" fill="currentColor" stroke="none"/></svg>',
-  "Alineadores transparentes":
-    '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9c2-3 14-3 16 0v3c-2 3-14 3-16 0z"/></svg>',
-  "Ortopedia dentofacial":
-    '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4c-2 4-2 12 0 16"/><path d="M18 4c2 4 2 12 0 16"/><path d="M9 12h6"/></svg>',
-  "Retiro de aparatos":
+  "Implantes dentales":
     '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 0 5 2.5 5 6 0 3-2 4-2 7 0 2-1 4-3 4s-3-2-3-4c0-3-2-4-2-7 0-3.5 2-6 5-6z"/><path d="M12 13v6M9 17l3 3 3-3"/></svg>',
+  "Coronas":
+    '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 10H5z"/><path d="M5 21h14"/></svg>',
 };
 const ICONO_DEFAULT =
   '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg>';

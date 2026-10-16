@@ -7,34 +7,28 @@ const prisma = new PrismaClient();
 
 const PROCEDIMIENTOS = [
   {
-    nombre: "Plan de tratamiento",
-    descripcion: "Evaluamos tu caso y diseñamos una ruta clara, con tiempos y costos definidos desde el inicio.",
+    nombre: "Limpieza dental",
+    descripcion: "Eliminamos placa y sarro con tecnologia ultrasonica indolora y pulido especializado para proteger tus encias.",
+    duracionMin: 30,
+    precio: null,
+  },
+  {
+    nombre: "Ortodoncia",
+    descripcion: "Alinea tu sonrisa con brackets esteticos o alineadores transparentes, con un plan a tu medida.",
+    duracionMin: 30,
+    precio: null,
+  },
+  {
+    nombre: "Implantes dentales",
+    descripcion: "Reemplaza piezas perdidas con una fijacion de titanio biocompatible y una corona hecha a medida.",
     duracionMin: 40,
-    precio: 80000,
+    precio: null,
   },
   {
-    nombre: "Brackets fijos",
-    descripcion: "Ortodoncia tradicional de alta precision para corregir la posicion de tus dientes.",
-    duracionMin: 45,
-    precio: 250000,
-  },
-  {
-    nombre: "Alineadores transparentes",
-    descripcion: "Corrige tu sonrisa de forma discreta, comoda y a tu propio ritmo.",
+    nombre: "Coronas",
+    descripcion: "Restauramos la fuerza, forma y belleza de tus dientes con coronas personalizadas de alta resistencia.",
     duracionMin: 30,
-    precio: 350000,
-  },
-  {
-    nombre: "Ortopedia dentofacial",
-    descripcion: "Guiamos el crecimiento oseo y dental en niños y adolescentes.",
-    duracionMin: 30,
-    precio: 180000,
-  },
-  {
-    nombre: "Retiro de aparatos",
-    descripcion: "Finalizamos tu tratamiento y cuidamos la retencion de tu nueva sonrisa.",
-    duracionMin: 30,
-    precio: 120000,
+    precio: null,
   },
 ];
 
