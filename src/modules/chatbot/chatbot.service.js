@@ -140,7 +140,7 @@ function iniciarDerivacion(estado, mensaje, porNoEntender = false) {
     : "Con gusto 🙋";
   return {
     estado,
-    respuestas: [texto(`${intro} Para que la doctora te escriba, ¿cual es tu *nombre*?`, [OPCION_SALIR_DERIVACION])],
+    respuestas: [texto(`${intro} Dentro de poco nos contactaremos contigo. ¿Cual es tu *nombre*?`, [OPCION_SALIR_DERIVACION])],
   };
 }
 

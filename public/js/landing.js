@@ -10,6 +10,8 @@ const ICONOS_PROCEDIMIENTO = {
     '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 0 5 2.5 5 6 0 3-2 4-2 7 0 2-1 4-3 4s-3-2-3-4c0-3-2-4-2-7 0-3.5 2-6 5-6z"/><path d="M12 13v6M9 17l3 3 3-3"/></svg>',
   "Coronas":
     '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 10H5z"/><path d="M5 21h14"/></svg>',
+  "Endodoncia":
+    '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 0 5 2.5 5 6 0 3-2 4-2 7 0 2-1 4-3 4s-3-2-3-4c0-3-2-4-2-7 0-3.5 2-6 5-6z"/><path d="M10.5 9v6M13.5 9v6"/></svg>',
 };
 const ICONO_DEFAULT =
   '<svg class="icon" style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg>';
@@ -17,14 +19,21 @@ const ICONO_DEFAULT =
 async function cargarServicios() {
   const contenedor = document.getElementById("serviciosGrid");
   try {
-    const procedimientos = await Api.get("/api/procedimientos?activos=true");
+    const catalogo = await Api.get("/api/procedimientos?activos=true");
+    // La API los entrega en orden alfabetico; la ortodoncia es la especialidad
+    // del consultorio y va primero (el resto conserva su orden).
+    const procedimientos = [...catalogo].sort(
+      (a, b) => (b.nombre === "Ortodoncia") - (a.nombre === "Ortodoncia")
+    );
     contenedor.innerHTML = "";
 
     procedimientos.forEach((p, i) => {
       const card = document.createElement("div");
-      card.className = "icard reveal";
+      const destacada = p.nombre === "Ortodoncia";
+      card.className = `icard reveal${destacada ? " destacada" : ""}`;
       card.style.transitionDelay = `${Math.min(i, 5) * 60}ms`;
       card.innerHTML = `
+        ${destacada ? '<span class="insignia">Especialidad</span>' : ""}
         <div class="ic">${ICONOS_PROCEDIMIENTO[p.nombre] || ICONO_DEFAULT}</div>
         <h3>${p.nombre}</h3>
         <p>${p.descripcion || ""}</p>

@@ -49,6 +49,33 @@ header.nav.scrolled{box-shadow:0 6px 24px -12px rgba(58,42,20,.22)}
 .brandmark{width:38px;height:38px;border-radius:50%;border:1px solid var(--line-strong);color:var(--accent-deep);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:14px;letter-spacing:.02em}
 .brandtext strong{display:block;font-size:14.5px;font-weight:600;letter-spacing:.01em}
 .brandtext span{display:block;font-size:10px;letter-spacing:.1em;color:var(--ink-faint);margin-top:1px}
+/* Nombre de la doctora sobre un tramo dorado (el de la franja de estadisticas):
+   nace en el borde izquierdo de la pantalla y termina en diagonal, sin cubrir
+   el resto de la barra. Solo en el header; el footer tambien usa .brand. */
+header.nav .brand{position:relative;isolation:isolate;align-self:stretch;padding-right:36px}
+header.nav .brand::before{content:"";position:absolute;z-index:-1;left:-100vw;right:0;top:-18px;bottom:-18px;background:linear-gradient(90deg,var(--accent-deep) calc(100% - 150px),var(--accent) 100%);clip-path:polygon(0 0,100% 0,calc(100% - 28px) 100%,0 100%)}
+header.nav .brandmark{border-color:rgba(251,243,226,.75);color:#FBF3E2}
+header.nav .brandtext strong{color:#FBF3E2}
+header.nav .brandtext span{color:#F1DFB8}
+/* Celular: el nombre y el subtitulo no se parten en varias lineas y el boton
+   "Agendar cita" queda solo con el icono, para que el menu no crezca. */
+@media(max-width:640px){header.nav .brand{padding-right:28px}}
+@media(max-width:480px){
+  header.nav .brand{gap:9px;padding-right:24px}
+  header.nav .brand::before{clip-path:polygon(0 0,100% 0,calc(100% - 20px) 100%,0 100%)}
+  header.nav .brandmark{width:34px;height:34px;font-size:12.5px;flex:none}
+  header.nav .brandtext strong{font-size:13.5px;white-space:nowrap}
+  header.nav .brandtext span{font-size:8.5px;letter-spacing:.06em;white-space:nowrap}
+  .head-actions{gap:8px}
+  .head-actions .btn .lbl{display:none}
+  .head-actions .btn.sm{padding:10px}
+}
+@media(max-width:360px){
+  header.nav .brand{gap:7px;padding-right:18px}
+  header.nav .brandmark{width:30px;height:30px;font-size:11px}
+  header.nav .brandtext strong{font-size:11.5px}
+  header.nav .brandtext span{font-size:7px;letter-spacing:.03em}
+}
 nav.links{display:none;gap:36px;font-size:13.5px;color:var(--ink-soft)}
 @media(min-width:920px){nav.links{display:flex}}
 nav.links a{color:inherit;text-decoration:none;transition:color .15s}
@@ -98,7 +125,7 @@ nav.links a:hover{color:var(--ink)}
 .btnrow{display:flex;gap:12px;flex-wrap:wrap}
 
 /* floating cards */
-.float-cards{margin-top:calc(var(--sp-8) * -1 + var(--sp-6));position:relative;z-index:2}
+.float-cards{margin-top:calc(var(--sp-8) * -1 + var(--sp-6));padding-bottom:var(--sp-7);position:relative;z-index:2}
 .float-cards .container{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--sp-4)}
 @media(max-width:860px){.float-cards .container{grid-template-columns:1fr;gap:var(--sp-3)}}
 .fcard{border-radius:18px;padding:var(--sp-5);box-shadow:var(--shadow-lg)}
@@ -143,6 +170,12 @@ nav.links a:hover{color:var(--ink)}
 .icard:hover .ic{transform:scale(1.08) rotate(-6deg)}
 .icard h3{font-size:16.5px;margin-bottom:8px;font-weight:500}
 .icard p{font-size:13px;color:var(--ink-soft);line-height:1.6;margin:0 0 12px}
+/* Tarjeta de la especialidad del consultorio (ortodoncia) */
+.icard.destacada{position:relative;background:linear-gradient(165deg,var(--accent-tint),var(--surface) 75%);border:1.5px solid var(--accent);box-shadow:var(--shadow-lg)}
+.icard.destacada .ic{background:var(--accent-deep);color:var(--surface)}
+.icard.destacada h3{font-size:18.5px}
+.icard.destacada p{color:var(--ink)}
+.icard .insignia{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--accent-deep);color:var(--surface);font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:5px 14px;border-radius:999px;white-space:nowrap}
 .icard a{font-size:12.5px;font-weight:700;letter-spacing:.03em;color:var(--accent-deep);text-decoration:none;cursor:pointer;background:none;border:none;padding:0;font-family:inherit}
 .empty-state{grid-column:1/-1;text-align:center;color:var(--ink-soft);font-size:14px;padding:var(--sp-6) 0}
 
@@ -154,17 +187,6 @@ nav.links a:hover{color:var(--ink)}
 .sband-item .ic{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex:none}
 .sband-item b{display:block;font-family:var(--font-display);font-size:24px;font-weight:500}
 .sband-item span{font-size:11px;letter-spacing:.03em;color:#F1DFB8;text-transform:uppercase}
-
-/* about2 */
-.about2{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-8);align-items:center}
-@media(max-width:860px){.about2{grid-template-columns:1fr;gap:var(--sp-6)}}
-.about2 .photo{border-radius:20px;overflow:hidden;aspect-ratio:4/3.4;box-shadow:var(--shadow)}
-.about2 .photo img{width:100%;height:100%;transition:transform .5s var(--ease)}
-.about2 .photo:hover img{transform:scale(1.04)}
-.about2-list{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;margin:var(--sp-5) 0 var(--sp-6)}
-.about2-item{display:flex;align-items:center;gap:11px}
-.about2-item .ic{width:38px;height:38px;border-radius:10px;background:var(--surface);border:1px solid var(--line);color:var(--accent-deep);display:flex;align-items:center;justify-content:center;flex:none}
-.about2-item span{font-size:13.5px;font-weight:500}
 
 /* gallery / instalaciones */
 .gallery{display:grid;grid-template-columns:1.3fr 1fr 1fr;grid-auto-rows:1fr;gap:var(--sp-3)}
@@ -355,7 +377,7 @@ footer .footer-bottom{padding-top:22px;margin-top:22px;border-top:1px solid rgba
 .send-btn:disabled{opacity:.5;cursor:default;transform:none}
 
 @media (max-width: 880px){
-  .hero-split .container,.about-grid,.contact-grid,.about2,.gallery-grid{grid-template-columns:1fr}
+  .hero-split .container,.about-grid,.contact-grid,.gallery-grid{grid-template-columns:1fr}
   nav.links{display:none}
 }
 

@@ -30,17 +30,23 @@ const PROCEDIMIENTOS = [
     duracionMin: 30,
     precio: null,
   },
+  {
+    nombre: "Endodoncia",
+    descripcion: "Tratamiento de conducto para salvar tu diente: eliminamos el dolor y la infeccion del nervio sin necesidad de extraerlo.",
+    duracionMin: 60,
+    precio: null,
+  },
 ];
 
 async function main() {
   console.log("Sembrando datos iniciales...");
 
+  // Se empareja por nombre y no por id: en una base que ya tiene procedimientos
+  // creados desde el panel, el id siguiente puede estar ocupado y el nuevo
+  // procedimiento quedaria sin crearse.
   for (const p of PROCEDIMIENTOS) {
-    await prisma.procedimiento.upsert({
-      where: { id: PROCEDIMIENTOS.indexOf(p) + 1 },
-      update: {},
-      create: p,
-    });
+    const existente = await prisma.procedimiento.findFirst({ where: { nombre: p.nombre } });
+    if (!existente) await prisma.procedimiento.create({ data: p });
   }
 
   const pinDraLyda = await bcrypt.hash("1234", 10);

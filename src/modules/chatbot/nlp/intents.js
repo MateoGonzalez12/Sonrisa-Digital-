@@ -18,7 +18,7 @@ module.exports = {
   ],
   CONSULTAR_PROCEDIMIENTOS: [
     "procedimientos", "que servicios", "que tratamientos", "precio", "cuanto cuesta",
-    "cuanto vale", "brackets", "alineadores", "ortodoncia", "cuanto dura", "informacion",
+    "cuanto vale", "brackets", "alineadores", "ortodoncia", "endodoncia", "tratamiento de conducto", "cuanto dura", "informacion",
     "que ofrecen", "servicios tienen",
   ],
   VER_CITAS: [
