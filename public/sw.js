@@ -7,7 +7,7 @@
  *     un service worker registrado, Safari no entrega ninguna notificacion.
  */
 
-const VERSION = "v2";
+const VERSION = "v3";
 const CACHE_SHELL = `sonrisa-shell-${VERSION}`;
 const CACHE_DATOS = `sonrisa-datos-${VERSION}`;
 

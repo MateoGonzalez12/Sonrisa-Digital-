@@ -1,7 +1,28 @@
 /* Componentes compartidos por el panel admin y la agenda movil del staff.
    Depende de las variables definidas en styles.css (debe cargarse despues). */
 
+/* Este archivo se escribio con otros nombres de variable (--cream, --gold...).
+   Se mapean a la paleta de styles.css: una variable inexistente invalida la
+   propiedad completa, y por eso los modales, tarjetas y botones se veian sin fondo. */
+:root{
+  --cream:var(--surface); --white:#FFFFFF;
+  --gold:var(--accent); --gold-light:var(--accent-light); --gold-dark:var(--accent-deep); --gold-soft:var(--accent-light);
+  --bg-page:var(--bg); --bg-section:var(--surface-2);
+  --radius:var(--radius-lg);
+}
+
 body.panel-body{background:var(--bg-page);min-height:100vh;}
+
+/* ---- BOTONES (variantes que usan el panel y la agenda movil) ---- */
+.btn-primary{background:var(--ink);color:var(--surface);}
+.btn-primary:hover{opacity:.88;transform:translateY(-2px);}
+.btn-ghost{background:transparent;border-color:var(--line-strong);color:var(--ink);}
+.btn-ghost:hover{border-color:var(--ink-soft);}
+.btn-danger{background:var(--danger-bg);color:var(--danger);border-color:rgba(180,67,47,.3);}
+.btn-danger:hover{background:var(--danger);color:var(--surface);}
+.btn-sm{padding:9px 16px;font-size:13px;}
+.btn.btn-block:not(.btn-primary){border-color:var(--line-strong);color:var(--ink);}
+.btn:disabled{opacity:.5;cursor:default;transform:none;}
 
 .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
 .login-card{
@@ -46,7 +67,7 @@ body.panel-body{background:var(--bg-page);min-height:100vh;}
 .admin-sidebar .brand-row span{font-size:10.5px;color:#C9BBA3;text-transform:uppercase;letter-spacing:.06em;}
 .admin-sidebar a{
   padding:10px 12px;border-radius:10px;font-size:13.8px;font-weight:600;color:#D9CBB6;
-  display:flex;align-items:center;gap:10px;
+  display:flex;align-items:center;gap:10px;text-decoration:none;
 }
 .admin-sidebar a:hover{background:rgba(255,255,255,.06);color:var(--cream);}
 .admin-sidebar a.active{background:var(--gold);color:var(--cream);}
@@ -98,7 +119,7 @@ body.panel-body{background:var(--bg-page);min-height:100vh;}
 .stat-card b{display:block;font-family:Georgia,serif;font-size:28px;}
 .stat-card span{font-size:12.5px;color:var(--ink-soft);}
 
-.panel-card{background:var(--cream);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;margin-bottom:22px;}
+.panel-card, .card{background:var(--cream);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;margin-bottom:22px;}
 .panel-card h2{font-size:17px;margin-bottom:14px;font-family:Georgia,serif;}
 .panel-card .card-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
 
@@ -127,7 +148,7 @@ table.data-table tr:last-child td{border-bottom:none;}
 .mobile-header b{display:block;font-size:15px;}
 .mobile-header span{font-size:11.5px;opacity:.9;}
 .mobile-tabs{display:flex;gap:8px;padding:12px 16px;background:var(--bg-section);}
-.mobile-tab{flex:1;text-align:center;padding:9px;border-radius:999px;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer;}
+.mobile-tab{flex:1;text-align:center;padding:9px;border-radius:999px;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer;text-decoration:none;}
 .mobile-tab.active{background:var(--gold);color:var(--cream);}
 .mobile-body{flex:1;padding:16px;overflow-y:auto;}
 .appt-card{background:var(--white);border-radius:14px;padding:14px 16px;box-shadow:0 2px 10px rgba(58,46,32,.08);margin-bottom:12px;cursor:pointer;}
