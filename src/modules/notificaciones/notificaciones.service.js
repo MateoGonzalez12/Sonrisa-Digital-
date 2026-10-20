@@ -76,9 +76,16 @@ async function enviarYRegistrar({ telefono, texto, citaId, tipo, plantilla }) {
   });
 }
 
-async function registrarMensajeEntrante({ telefono, texto, citaId }) {
+async function registrarMensajeEntrante({ telefono, texto, citaId, proveedorMessageId }) {
   return prisma.mensajeWhatsapp.create({
-    data: { citaId: citaId || null, telefono, direccion: "ENTRANTE", tipo: "chatbot", contenido: texto },
+    data: {
+      citaId: citaId || null,
+      telefono,
+      direccion: "ENTRANTE",
+      tipo: "chatbot",
+      contenido: texto,
+      proveedorMessageId: proveedorMessageId || null,
+    },
   });
 }
 
@@ -129,8 +136,8 @@ async function notificarCambioAlPaciente(cita, mensajeExtra) {
 }
 
 // Interpreta la respuesta del paciente: "CONFIRMAR", "CANCELAR" o null si no
-// esta claro. Es conservador a proposito: una negacion ("no puedo confirmar") o
-// un "no" dentro de una frase no cancela ni confirma nada.
+// esta claro. Es conservador a proposito: una negacion ("no puedo confirmar",
+// "no quiero cancelar") o un "no" dentro de una frase no cancela ni confirma nada.
 function clasificarRespuesta(texto) {
   const t = String(texto || "")
     .normalize("NFD")
@@ -139,48 +146,60 @@ function clasificarRespuesta(texto) {
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  if (/\bcancel/.test(t)) return "CANCELAR";
+  if (/\bcancel/.test(t)) return /\b(no|nunca|ni|tampoco)\b(?:\s+\w+){0,3}\s+cancel/.test(t) ? null : "CANCELAR";
   if (/\bconfirm/.test(t)) return /\b(no|nunca|ni)\b/.test(t) ? null : "CONFIRMAR";
   if (t === "no") return "CANCELAR";
   if (/^(si|ok|okay|vale|listo|dale|claro)$/.test(t)) return "CONFIRMAR";
   return null;
 }
 
-// Cita a la que responde el paciente: la del ultimo aviso que se le envio a ese
-// numero; si no hay, la proxima cita activa de un paciente con ese telefono.
-async function buscarCitaDeLaRespuesta(telefono) {
-  const variantes = variantesTelefono(telefono);
-  const activa = { estado: { in: ["PENDIENTE", "CONFIRMADA"] }, fechaHora: { gte: new Date() } };
-  const incluir = { paciente: true, procedimiento: true, odontologo: true };
+const ESTADOS_ACTIVOS = ["PENDIENTE", "CONFIRMADA"];
+const INCLUIR_CITA = { paciente: true, procedimiento: true, odontologo: true };
 
-  const ultimoAviso = await prisma.mensajeWhatsapp.findFirst({
-    where: { telefono: { in: variantes }, direccion: "SALIENTE", cita: activa },
-    orderBy: { createdAt: "desc" },
-    select: { citaId: true },
-  });
-  if (ultimoAviso) return prisma.cita.findUnique({ where: { id: ultimoAviso.citaId }, include: incluir });
+// Meta reenvia el mismo mensaje si tarda en recibir el 200 (paso con un
+// "Cancelar" que llego dos veces y cancelo dos citas). Se descarta todo mensaje
+// cuyo id ya se proceso: en memoria para dos entregas casi simultaneas, y en la
+// base (columna proveedorMessageId del mensaje entrante) para el resto.
+const IDS_TTL_MS = 60 * 60 * 1000;
+const idsVistos = new Map();
+function marcarSiEsNuevo(id) {
+  const ahora = Date.now();
+  for (const [visto, cuando] of idsVistos) if (ahora - cuando > IDS_TTL_MS) idsVistos.delete(visto);
+  if (idsVistos.has(id)) return false;
+  idsVistos.set(id, ahora);
+  return true;
+}
 
-  return prisma.cita.findFirst({
-    where: { ...activa, paciente: { telefono: { in: variantes } } },
+// Cuando el paciente tiene varias citas y el mensaje no dice cual, se le pregunta
+// y se recuerda (unos minutos) que accion estaba pidiendo y entre que citas elegir.
+const SELECCION_TTL_MS = 15 * 60 * 1000;
+const seleccionesPendientes = new Map();
+const claveTelefono = (telefono) => String(telefono || "").replace(/\D/g, "").slice(-10);
+
+// Citas futuras y activas de los pacientes registrados con ese celular.
+function citasActivasDelTelefono(telefono) {
+  return prisma.cita.findMany({
+    where: {
+      estado: { in: ESTADOS_ACTIVOS },
+      fechaHora: { gte: new Date() },
+      paciente: { telefono: { in: variantesTelefono(telefono) } },
+    },
     orderBy: { fechaHora: "asc" },
-    include: incluir,
+    include: INCLUIR_CITA,
   });
 }
 
-// Procesa la respuesta entrante del paciente por WhatsApp para
-// confirmar o cancelar su proxima cita. Si el mensaje no se reconoce,
-// no se modifica el estado de la cita.
-async function procesarRespuestaEntrante({ telefono, texto }) {
+// Devuelve la cita solo si sigue activa (no cancelada, completada ni pasada).
+async function cargarCitaActiva(id) {
+  const cita = await prisma.cita.findUnique({ where: { id }, include: INCLUIR_CITA });
+  if (!cita || !ESTADOS_ACTIVOS.includes(cita.estado) || new Date(cita.fechaHora) < new Date()) return null;
+  return cita;
+}
+
+async function aplicarAccion(accion, cita, telefono) {
   const citasService = require("../citas/citas.service");
-  await registrarMensajeEntrante({ telefono, texto });
 
-  const respuesta = clasificarRespuesta(texto);
-  if (!respuesta) return { entendido: false };
-
-  const cita = await buscarCitaDeLaRespuesta(telefono);
-  if (!cita) return { entendido: false };
-
-  if (respuesta === "CONFIRMAR") {
+  if (accion === "CONFIRMAR") {
     const actualizada = await citasService.confirmarCita(cita.id);
     // Push a la doctora; si falla no debe afectar la respuesta al paciente.
     pushService.avisarCitaConfirmada(actualizada).catch((err) =>
@@ -195,19 +214,110 @@ async function procesarRespuestaEntrante({ telefono, texto }) {
     return { entendido: true, accion: "confirmada", cita: actualizada };
   }
 
-  if (respuesta === "CANCELAR") {
-    const actualizada = await citasService.cancelarCita(cita.id);
-    await enviarYRegistrar({
-      telefono,
-      texto: "Tu cita fue cancelada. Cuando quieras agendar de nuevo, aqui estamos 🙂",
-      citaId: cita.id,
-      tipo: "cancelacion",
-    });
-    // La cancelacion ya avisa a la doctora por push desde citasService.cancelarCita.
-    return { entendido: true, accion: "cancelada", cita: actualizada };
+  const actualizada = await citasService.cancelarCita(cita.id);
+  await enviarYRegistrar({
+    telefono,
+    texto: "Tu cita fue cancelada. Cuando quieras agendar de nuevo, aqui estamos 🙂",
+    citaId: cita.id,
+    tipo: "cancelacion",
+  });
+  // La cancelacion ya avisa a la doctora por push desde citasService.cancelarCita.
+  return { entendido: true, accion: "cancelada", cita: actualizada };
+}
+
+async function preguntarCual(accion, citas, telefono) {
+  const opciones = citas.slice(0, 9);
+  const lista = opciones
+    .map((c, i) => `${i + 1}) ${c.paciente.nombre.split(" ")[0]} · ${c.procedimiento.nombre} · ${formatFechaHora(c.fechaHora)}`)
+    .join("\n");
+  seleccionesPendientes.set(claveTelefono(telefono), {
+    accion,
+    citaIds: opciones.map((c) => c.id),
+    expira: Date.now() + SELECCION_TTL_MS,
+  });
+  await enviarYRegistrar({
+    telefono,
+    texto: `Tienes ${citas.length} citas activas:\n${lista}\n\n¿Cual quieres ${accion === "CANCELAR" ? "cancelar" : "confirmar"}? Responde solo con el numero.`,
+    tipo: "aclaracion",
+  });
+  return { entendido: true, accion: "aclaracion" };
+}
+
+async function atenderRespuesta({ telefono, texto, id, contextId }) {
+  await registrarMensajeEntrante({ telefono, texto, proveedorMessageId: id });
+
+  // El paciente contesta "¿cual cita?" con el numero de la lista.
+  const clave = claveTelefono(telefono);
+  const pendiente = seleccionesPendientes.get(clave);
+  if (pendiente && pendiente.expira < Date.now()) seleccionesPendientes.delete(clave);
+  const eleccion = /^\s*(\d{1,2})\s*[.)]?\s*$/.exec(String(texto || ""));
+  if (pendiente && pendiente.expira >= Date.now() && eleccion) {
+    const citaId = pendiente.citaIds[Number(eleccion[1]) - 1];
+    if (!citaId) {
+      await enviarYRegistrar({ telefono, texto: "No encontre esa opcion. Responde con uno de los numeros de la lista.", tipo: "aclaracion" });
+      return { entendido: true, accion: "aclaracion" };
+    }
+    seleccionesPendientes.delete(clave);
+    const cita = await cargarCitaActiva(citaId);
+    if (!cita) return { entendido: false };
+    return aplicarAccion(pendiente.accion, cita, telefono);
   }
 
-  return { entendido: false };
+  const accion = clasificarRespuesta(texto);
+  if (!accion) return { entendido: false };
+
+  // Si el paciente toco un boton o respondio citando un aviso, Meta indica a que
+  // mensaje respondia (context.id): esa es la cita exacta, sin adivinar.
+  if (contextId) {
+    const aviso = await prisma.mensajeWhatsapp.findFirst({
+      where: { proveedorMessageId: contextId, direccion: "SALIENTE", citaId: { not: null } },
+      select: { citaId: true },
+    });
+    if (aviso) {
+      const cita = await cargarCitaActiva(aviso.citaId);
+      if (cita) return aplicarAccion(accion, cita, telefono);
+      await enviarYRegistrar({
+        telefono,
+        texto: "Esa cita ya no esta activa, asi que no hice ningun cambio. Si necesitas algo mas, escribenos 🙂",
+        tipo: "aclaracion",
+      });
+      return { entendido: true, accion: "sin_cambio" };
+    }
+  }
+
+  // Sin contexto: solo se actua si no hay duda de cual cita es. Con varias citas
+  // activas se pregunta, en vez de elegir una (antes se cancelaba la "proxima").
+  const citas = await citasActivasDelTelefono(telefono);
+  if (citas.length === 0) return { entendido: false };
+  if (citas.length === 1) return aplicarAccion(accion, citas[0], telefono);
+  return preguntarCual(accion, citas, telefono);
+}
+
+// Procesa la respuesta entrante del paciente por WhatsApp para confirmar o
+// cancelar una cita. Si el mensaje no se reconoce, no se modifica nada. Un mismo
+// mensaje (mismo id) nunca se procesa dos veces.
+async function procesarRespuestaEntrante(mensaje) {
+  const { id } = mensaje;
+  if (id) {
+    if (!marcarSiEsNuevo(id)) return { entendido: false, duplicado: true };
+    try {
+      const previo = await prisma.mensajeWhatsapp.findFirst({
+        where: { proveedorMessageId: id, direccion: "ENTRANTE" },
+        select: { id: true },
+      });
+      if (previo) return { entendido: false, duplicado: true };
+    } catch (err) {
+      idsVistos.delete(id);
+      throw err;
+    }
+  }
+  try {
+    return await atenderRespuesta(mensaje);
+  } catch (err) {
+    // Si fallo antes de hacer nada, un reenvio de Meta debe poder reintentarse.
+    if (id) idsVistos.delete(id);
+    throw err;
+  }
 }
 
 module.exports = {
@@ -217,6 +327,6 @@ module.exports = {
   notificarCambioAlPaciente,
   procesarRespuestaEntrante,
   clasificarRespuesta,
-  buscarCitaDeLaRespuesta,
+  citasActivasDelTelefono,
   variantesTelefono,
 };

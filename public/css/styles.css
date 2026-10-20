@@ -54,7 +54,8 @@ header.nav.scrolled{box-shadow:0 6px 24px -12px rgba(58,42,20,.22)}
    el resto de la barra. Solo en el header; el footer tambien usa .brand. */
 header.nav .brand{position:relative;isolation:isolate;align-self:stretch;padding-right:36px}
 header.nav .brand::before{content:"";position:absolute;z-index:-1;left:-100vw;right:0;top:-18px;bottom:-18px;background:linear-gradient(90deg,var(--accent-deep) calc(100% - 150px),var(--accent) 100%);clip-path:polygon(0 0,100% 0,calc(100% - 28px) 100%,0 100%)}
-header.nav .brandmark{border-color:rgba(251,243,226,.75);color:#FBF3E2}
+header.nav .brandmark{border-color:rgba(251,243,226,.75);color:#FBF3E2;padding:5px;flex:none}
+header.nav .brandmark img{width:100%;height:100%;object-fit:contain}
 header.nav .brandtext strong{color:#FBF3E2}
 header.nav .brandtext span{color:#F1DFB8}
 /* Celular: el nombre y el subtitulo no se parten en varias lineas y el boton

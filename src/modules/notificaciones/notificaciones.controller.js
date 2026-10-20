@@ -14,6 +14,26 @@ const verificarWebhook = (req, res) => {
   return res.sendStatus(403);
 };
 
+// Mensajes de Meta ya aceptados y todavia en proceso. Se procesan en orden y sin
+// que un error en uno impida los demas.
+const enProceso = new Set();
+function procesarEnSegundoPlano(mensajes) {
+  const trabajo = (async () => {
+    for (const m of mensajes) {
+      try {
+        await service.procesarRespuestaEntrante(m);
+      } catch (err) {
+        console.error("[webhook] error procesando respuesta:", err.message);
+      }
+    }
+  })();
+  enProceso.add(trabajo);
+  trabajo.finally(() => enProceso.delete(trabajo));
+  return trabajo;
+}
+// Para las pruebas: espera a que terminen los mensajes ya aceptados.
+const esperarProcesamiento = () => Promise.all([...enProceso]);
+
 // Respuestas de pacientes por WhatsApp. Meta envia JSON firmado; Twilio, un
 // formulario con "From" y "Body".
 const webhookEntrante = asyncHandler(async (req, res) => {
@@ -25,22 +45,20 @@ const webhookEntrante = asyncHandler(async (req, res) => {
     if (!meta.firmaValida(req.rawBody, req.get("x-hub-signature-256"))) {
       return res.sendStatus(403);
     }
-    // Siempre 200: si se responde error, Meta reintenta el mismo mensaje.
-    for (const m of meta.extraerMensajes(req.body)) {
-      try {
-        await service.procesarRespuestaEntrante(m);
-      } catch (err) {
-        console.error("[webhook] error procesando respuesta:", err.message);
-      }
-    }
-    return res.sendStatus(200);
+    // Siempre 200 y de inmediato: si Meta no recibe respuesta a tiempo (procesar
+    // implica leer la base y mandar un WhatsApp, unos segundos), reenvia el mismo
+    // mensaje. Asi fue como un "Cancelar" cancelo dos citas. El trabajo sigue
+    // despues de responder.
+    const mensajes = meta.extraerMensajes(req.body);
+    res.sendStatus(200);
+    return procesarEnSegundoPlano(mensajes);
   }
 
   // Twilio envia "From" como "whatsapp:+573001234567" y "Body" con el texto.
   const from = String(req.body.From || req.body.from || "").replace("whatsapp:", "");
   const texto = req.body.Body || req.body.body || "";
   if (from && texto) {
-    await service.procesarRespuestaEntrante({ telefono: from, texto });
+    await service.procesarRespuestaEntrante({ telefono: from, texto, id: req.body.MessageSid || undefined });
   }
 
   // Respuesta TwiML vacia: la respuesta real ya se envio via la API.
@@ -57,4 +75,4 @@ const listarMensajes = asyncHandler(async (req, res) => {
   res.json(mensajes);
 });
 
-module.exports = { verificarWebhook, webhookEntrante, listarMensajes };
+module.exports = { verificarWebhook, webhookEntrante, listarMensajes, esperarProcesamiento };

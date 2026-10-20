@@ -24,10 +24,16 @@ test("clasificarRespuesta: ante la duda no hace nada (null)", () => {
   }
 });
 
-// Fallo conocido: una negacion de "cancelar" hoy CANCELA la cita. Se deja como
-// "todo" para que quede registrado sin romper la suite; cuando se corrija, quitar el todo.
-test("clasificarRespuesta: 'no quiero cancelar' no deberia cancelar", { todo: "hoy devuelve CANCELAR" }, () => {
-  assert.equal(clasificarRespuesta("no quiero cancelar"), null);
+test("clasificarRespuesta: una negacion de 'cancelar' no cancela", () => {
+  for (const texto of ["no quiero cancelar", "No cancelar", "no la cancele", "nunca dije que quisiera cancelar", "tampoco voy a cancelar"]) {
+    assert.equal(clasificarRespuesta(texto), null, `"${texto}"`);
+  }
+});
+
+test("clasificarRespuesta: 'cancelar' dentro de una frase afirmativa si cancela", () => {
+  for (const texto of ["por favor cancelar mi cita", "Cancelar", "quiero cancelar la cita de manana"]) {
+    assert.equal(clasificarRespuesta(texto), "CANCELAR", `"${texto}"`);
+  }
 });
 
 test("variantesTelefono: el mismo celular escrito de distintas formas", () => {
@@ -85,6 +91,17 @@ test("extraerMensajes: texto, boton de plantilla y respuesta interactiva", () =>
     { telefono: "573001112222", texto: "confirmo" },
     { telefono: "573003334444", texto: "CANCELAR" },
     { telefono: "573005556666", texto: "CONFIRMAR" },
+  ]);
+});
+
+test("extraerMensajes: conserva el id del mensaje y el del aviso al que responde", () => {
+  const body = envolver([
+    { id: "wamid.A", from: "573001112222", type: "button", button: { text: "Cancelar" }, context: { from: "573000000000", id: "wamid.AVISO" } },
+    { id: "wamid.B", from: "573003334444", type: "text", text: { body: "hola" } },
+  ]);
+  assert.deepEqual(extraerMensajes(body), [
+    { telefono: "573001112222", texto: "Cancelar", id: "wamid.A", contextId: "wamid.AVISO" },
+    { telefono: "573003334444", texto: "hola", id: "wamid.B" },
   ]);
 });
 

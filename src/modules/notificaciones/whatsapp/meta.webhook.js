@@ -11,9 +11,12 @@ function firmaValida(rawBody, cabecera) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-// Devuelve [{ telefono, texto }] con los mensajes entrantes del payload de Meta.
-// Cubre texto normal y respuestas por boton (plantilla o interactivo); ignora
-// los "statuses" (entregado/leido).
+// Devuelve [{ telefono, texto, id?, contextId? }] con los mensajes entrantes del
+// payload de Meta. Cubre texto normal y respuestas por boton (plantilla o
+// interactivo); ignora los "statuses" (entregado/leido).
+//  - id: identificador del mensaje; permite descartar los que Meta reenvia.
+//  - contextId: id del mensaje al que el paciente respondio (boton o cita de un
+//    aviso); permite saber a que cita se refiere sin adivinar.
 function extraerMensajes(body) {
   const mensajes = [];
   for (const entrada of (body && body.entry) || []) {
@@ -26,7 +29,12 @@ function extraerMensajes(body) {
           const r = m.interactive.button_reply || m.interactive.list_reply;
           texto = r && r.title;
         }
-        if (m.from && texto) mensajes.push({ telefono: m.from, texto });
+        if (m.from && texto) {
+          const mensaje = { telefono: m.from, texto };
+          if (m.id) mensaje.id = m.id;
+          if (m.context && m.context.id) mensaje.contextId = m.context.id;
+          mensajes.push(mensaje);
+        }
       }
     }
   }
