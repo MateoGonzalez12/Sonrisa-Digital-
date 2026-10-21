@@ -495,6 +495,89 @@ test("cancelar: si se equivoco de cedula, vuelve a pedirla en vez de cancelar", 
   assert.equal(prisma.llamadasA("cita.update").length, 0);
 });
 
+test("cancelar: una respuesta que solo contiene las letras 'si' no cancela ('no, asi esta bien')", async () => {
+  const { ana } = pacientesConCitas();
+  prisma.definir("cita.findFirst", async () => ana);
+  for (const frase of ["no, asi esta bien", "así está bien", "mejor la dejo, decisión tomada", "no, no quiero cancelar"]) {
+    const c = await conversar();
+    await c.decir("cancelar mi cita");
+    await c.decir(CEDULA_ANA);
+    await c.decir(frase);
+    assert.match(c.texto(), /se mantiene/, frase);
+  }
+  assert.equal(prisma.llamadasA("cita.update").length, 0);
+});
+
+test("cancelar: un si claro cancela aunque no use el boton", async () => {
+  const { ana } = pacientesConCitas();
+  prisma.definir("cita.findFirst", async () => ana);
+  for (const frase of ["sí", "si, cancelala", "cancelar"]) {
+    const c = await conversar();
+    await c.decir("quiero cancelar mi cita");
+    await c.decir(CEDULA_ANA);
+    await c.decir(frase);
+    assert.match(c.texto(), /fue cancelada/, frase);
+  }
+  assert.equal(prisma.llamadasA("cita.update").length, 3);
+});
+
+test("confirmar agendamiento y reprogramacion: 'asi' no cuenta como si", async () => {
+  const { ana } = pacientesConCitas();
+  prisma.definir("cita.findFirst", async () => ana);
+  const c = await conversar();
+  await c.decir("Agendar Ortodoncia");
+  await c.decir("Luis Perez");
+  await c.decir(CEDULA_LUIS);
+  await c.decir("3151112233");
+  await c.decir(`${fechaEnTexto(diaHabilFuturo(10, 10))} 10am`);
+  await c.decir("asi esta bien?");
+  assert.match(c.texto(), /¿Confirmas la cita\?/, "repregunta en vez de agendar");
+  assert.equal(prisma.llamadasA("cita.create").length, 0);
+
+  const r = await conversar();
+  await r.decir("reprogramar");
+  await r.decir(CEDULA_ANA);
+  await r.decir(`${fechaEnTexto(diaHabilFuturo(14, 15))} 3pm`);
+  await r.decir("asi no");
+  assert.match(r.texto(), /no se hizo ningun cambio/);
+  assert.equal(prisma.llamadasA("cita.update").length, 0);
+});
+
+test("salir a mitad de un flujo: 'menu' o 'cancelar' vuelve al menu en vez de tomarse como dato", async () => {
+  pacientesConCitas();
+  const casos = [
+    [["Agendar una cita"], "menu"],
+    [["Agendar una cita", "Ana Maria Gomez"], "cancelar"],
+    [["Agendar una cita", "Ana Maria Gomez", CEDULA_ANA], "volver"],
+    [["Agendar una cita", "Ana Maria Gomez", CEDULA_ANA, "3001234567"], "salir"],
+    [["Agendar Ortodoncia", "Ana Maria Gomez", CEDULA_ANA, "3001234567"], "Menú"],
+    [["reprogramar", CEDULA_ANA], "cancelar"],
+    [["ver mis citas"], "olvidalo"],
+  ];
+  for (const [pasos, salida] of casos) {
+    const c = await conversar();
+    for (const p of pasos) await c.decir(p);
+    await c.decir(salida);
+    assert.match(c.texto(), /lo dejamos aqui/, `${pasos.join(" > ")} > ${salida}`);
+    assert.ok(c.opciones().includes("Agendar una cita"));
+    // Despues de salir, el bot entiende una intencion nueva.
+    await c.decir("consultar procedimientos");
+    assert.match(c.texto(), /Ortodoncia/);
+  }
+  assert.equal(prisma.llamadasA("cita.create").length, 0);
+  assert.equal(prisma.llamadasA("cita.update").length, 0);
+});
+
+test("salir a mitad de un flujo no cambia el significado de 'cancelar' al confirmar una cancelacion", async () => {
+  const { ana } = pacientesConCitas();
+  prisma.definir("cita.findFirst", async () => ana);
+  const c = await conversar();
+  await c.decir("cancelar mi cita");
+  await c.decir(CEDULA_ANA);
+  await c.decir("cancelar");
+  assert.match(c.texto(), /fue cancelada/);
+});
+
 // ---------------------------------------------------------------------------
 // Contacto humano
 // ---------------------------------------------------------------------------

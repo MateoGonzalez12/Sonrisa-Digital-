@@ -130,6 +130,56 @@ function quiereSalirDeDerivacion(mensaje) {
   return RE_SALIR_DERIVACION.test(quitarTildes(String(mensaje || "")).replace(/[^a-z\s]/g, "").trim());
 }
 
+// Minusculas, sin tildes ni signos y con un solo espacio entre palabras.
+function normalizarRespuesta(mensaje) {
+  return quitarTildes(String(mensaje || "")).replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+// Salida a mitad de un flujo. Antes "menu" o "cancelar" se tomaban como un dato
+// invalido (un nombre sin apellido, una cedula sin digitos) y el paciente
+// quedaba atrapado repitiendo la pregunta. No aplica a los pasos de
+// confirmacion: ahi "no" y "cancelar" ya tienen su propio significado (en
+// CANCELAR_CONFIRMAR, "cancelar" es un si).
+const RE_SALIR_FLUJO = /^(menu|menu principal|volver|volver al menu|salir|cancelar|cancela|olvidalo|mejor no|ya no|no gracias|inicio|empezar de nuevo|atras)$/;
+const PASOS_CON_SALIDA = new Set([
+  "AGENDAR_NOMBRE",
+  "AGENDAR_CEDULA",
+  "AGENDAR_TELEFONO",
+  "AGENDAR_PROCEDIMIENTO",
+  "AGENDAR_FECHAHORA",
+  "VERCITAS_CEDULA",
+  "REPROGRAMAR_CEDULA",
+  "REPROGRAMAR_FECHAHORA",
+  "CANCELAR_CEDULA",
+]);
+
+function salirAlMenu(estado) {
+  estado.paso = "ESPERANDO_INTENCION";
+  estado.intentosFallidos = 0;
+  estado.datos = { ...conversaciones.ESTADO_INICIAL.datos };
+  return {
+    estado,
+    respuestas: [
+      texto("Listo, lo dejamos aqui 🙂 ¿En que mas puedo ayudarte?", [
+        "Agendar una cita",
+        "Ver mis citas",
+        "Consultar procedimientos",
+        "Hablar con una persona",
+      ]),
+    ],
+  };
+}
+
+// Respuestas de si/no en los pasos de confirmacion. Se comparan palabras
+// completas: buscar "si" como texto suelto hacia que "asi" contara como un si,
+// y "no, asi esta bien" cancelaba la cita.
+const PALABRAS_SI = ["si", "confirmar", "confirmo", "confirma", "confirmado", "dale", "claro", "ok", "listo", "acepto", "acuerdo", "correcto"];
+
+function contieneAlguna(mensaje, lista) {
+  const palabras = new Set(normalizarRespuesta(mensaje).split(" "));
+  return lista.some((p) => palabras.has(p));
+}
+
 function iniciarDerivacion(estado, mensaje, porNoEntender = false) {
   estado.intentosFallidos = 0;
   estado.paso = "DERIVAR_NOMBRE";
@@ -502,13 +552,12 @@ async function pasoAgendarFechaHora(estado, mensaje) {
 }
 
 async function pasoAgendarConfirmar(estado, mensaje) {
-  const t = mensaje.trim().toLowerCase();
-  if (/(cancel|no\b)/.test(t)) {
+  if (contieneAlguna(mensaje, ["no", "cancelar", "cancela", "cancelo"])) {
     estado.paso = "ESPERANDO_INTENCION";
     estado.datos = { ...conversaciones.ESTADO_INICIAL.datos };
     return { estado, respuestas: [texto("Sin problema, no se agendo la cita. ¿Necesitas algo mas?", ["Agendar una cita", "Consultar procedimientos"])] };
   }
-  if (!/(confirm|si\b|sí)/.test(t)) {
+  if (!contieneAlguna(mensaje, PALABRAS_SI)) {
     return { estado, respuestas: [texto("¿Confirmas la cita?", ["Confirmar cita", "Cancelar"])] };
   }
 
@@ -675,8 +724,7 @@ async function pasoReprogramarFechaHora(estado, mensaje) {
 async function pasoReprogramarConfirmar(estado, mensaje) {
   if (dijoQueSeEquivoco(mensaje)) return volverAPedirCedula(estado, "REPROGRAMAR_CEDULA");
 
-  const t = mensaje.trim().toLowerCase();
-  if (!/(confirm|si\b|sí)/.test(t)) {
+  if (!contieneAlguna(mensaje, PALABRAS_SI) || contieneAlguna(mensaje, ["no", "cancelar", "cancela"])) {
     estado.paso = "ESPERANDO_INTENCION";
     return { estado, respuestas: [texto("De acuerdo, no se hizo ningun cambio.", ["Agendar una cita", "Ver mis citas"])] };
   }
@@ -731,8 +779,11 @@ async function pasoCancelarCedula(estado, mensaje) {
 async function pasoCancelarConfirmar(estado, mensaje) {
   if (dijoQueSeEquivoco(mensaje)) return volverAPedirCedula(estado, "CANCELAR_CEDULA");
 
-  const t = mensaje.trim().toLowerCase();
-  if (!/(si|cancel)/.test(t) || /mantener/.test(t)) {
+  // Ante la duda la cita se mantiene: solo se cancela con un si claro y sin
+  // ningun "no" en el mensaje ("no, asi esta bien" no cancela).
+  const quiereCancelar = contieneAlguna(mensaje, [...PALABRAS_SI, "cancelar", "cancela", "cancelala", "cancelarla", "cancelo"]);
+  const quiereMantener = contieneAlguna(mensaje, ["no", "mantener", "mantenerla", "mantengo", "dejala", "dejarla"]);
+  if (!quiereCancelar || quiereMantener) {
     estado.paso = "ESPERANDO_INTENCION";
     return { estado, respuestas: [texto("Tu cita se mantiene sin cambios. 🙂")] };
   }
@@ -775,7 +826,8 @@ async function procesarMensaje({ conversacionId, mensaje, canal = "web" }) {
   const estado = conversacion.estado || { ...conversaciones.ESTADO_INICIAL };
   if (!estado.datos) estado.datos = { ...conversaciones.ESTADO_INICIAL.datos };
 
-  const manejador = MANEJADORES[estado.paso] || pasoEsperandoIntencion;
+  const quiereSalir = PASOS_CON_SALIDA.has(estado.paso) && RE_SALIR_FLUJO.test(normalizarRespuesta(mensaje));
+  const manejador = quiereSalir ? salirAlMenu : MANEJADORES[estado.paso] || pasoEsperandoIntencion;
   const { estado: nuevoEstado, respuestas } = await manejador(estado, mensaje);
 
   await conversaciones.guardarEstado(conversacion.id, nuevoEstado);
