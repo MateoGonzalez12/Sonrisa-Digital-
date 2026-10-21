@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 
 const bot = require("../../src/modules/chatbot/chatbot.service");
 const push = require("../../src/modules/notificaciones/push/push.service");
+const proveedorWhatsapp = require("../../src/modules/notificaciones/whatsapp");
 const { MESES } = require("../../src/utils/fechas");
 
 const ORTODONCIA = { id: 1, nombre: "Ortodoncia", descripcion: "Brackets y alineadores", duracionMin: 30, precio: 150000, activo: true };
@@ -225,16 +226,154 @@ test("agendar: cancelar en el resumen no crea la cita", async () => {
 // ---------------------------------------------------------------------------
 // Ver, reprogramar y cancelar
 // ---------------------------------------------------------------------------
-test("ver mis citas: con cedula conocida muestra la proxima; con una desconocida no encuentra nada", async () => {
-  pacientesConCitas();
+// ---- Ver mis citas: privacidad ----------------------------------------------
+// La cedula la conoce mucha gente: "ver mis citas" no muestra nada en pantalla y
+// manda el detalle al WhatsApp registrado.
+
+// Simula la base de verdad: aplica el filtro (estado, fecha futura, orden y limite)
+// que el chatbot le pide, para comprobar QUE citas se envian. Cada prueba usa una
+// cedula distinta porque el chatbot no reenvia a la misma cedula en 2 minutos.
+function pacienteConHistorial(cedula, citas, { telefono = "3001234567" } = {}) {
+  prisma.definir("paciente.findUnique", async ({ where, include }) => {
+    if (where.cedula !== cedula) return null;
+    const f = include.citas;
+    const lista = citas
+      .filter((c) => !f.where.estado.in || f.where.estado.in.includes(c.estado))
+      .filter((c) => !f.where.fechaHora || c.fechaHora >= f.where.fechaHora.gte)
+      .sort((a, b) => a.fechaHora - b.fechaHora)
+      .slice(0, f.take);
+    return { id: 5, nombre: "Ana Maria Gomez", cedula, telefono, citas: lista };
+  });
+}
+
+const whatsappEnviados = () =>
+  prisma.llamadasA("mensajeWhatsapp.create").map((c) => c.args.data).filter((d) => d.direccion === "SALIENTE");
+
+async function verMisCitas(cedula) {
   const c = await conversar();
   await c.decir("ver mis citas");
-  await c.decir(CEDULA_ANA);
-  assert.equal(c.tarjeta().procedimiento, "Ortodoncia");
+  await c.decir(cedula);
+  return c;
+}
 
-  await c.decir("ver mis citas");
-  await c.decir("9999999");
-  assert.match(c.texto(), /No encontre citas activas/);
+test("ver mis citas: no muestra nada de la cita en pantalla, la manda al WhatsApp registrado", async () => {
+  const proxima = citaDe(5, "2001", "Ana Maria Gomez", diaHabilFuturo(8, 11), { id: 4, estado: "CONFIRMADA", procedimiento: LIMPIEZA });
+  pacienteConHistorial("2001", [proxima]);
+
+  const c = await verMisCitas("2001");
+
+  // En pantalla: ninguna tarjeta, ni procedimiento, ni fecha, ni estado, ni nombre.
+  assert.equal(c.tarjeta(), undefined);
+  assert.doesNotMatch(c.texto(), /Limpieza|Ana|confirmada|pendiente|octubre|noviembre|diciembre|enero/i);
+  assert.match(c.texto(), /WhatsApp/);
+
+  // Por WhatsApp, al celular registrado: el detalle.
+  const enviados = whatsappEnviados();
+  assert.equal(enviados.length, 1);
+  assert.equal(enviados[0].telefono, "3001234567");
+  assert.equal(enviados[0].tipo, "consulta_citas");
+  assert.match(enviados[0].contenido, /Limpieza dental/);
+  assert.match(enviados[0].contenido, /confirmada/);
+  assert.match(enviados[0].contenido, new RegExp(fechaEnTexto(proxima.fechaHora).replace(/^\d+/, String(proxima.fechaHora.getDate()))));
+});
+
+test("ver mis citas: solo se envian las proximas, no las vencidas, completadas ni canceladas", async () => {
+  const vencida = citaDe(5, "2002", "Ana Maria Gomez", new Date(Date.now() - 40 * 86400000), { id: 1 });
+  const completada = citaDe(5, "2002", "Ana Maria Gomez", new Date(Date.now() - 10 * 86400000), { id: 2, estado: "COMPLETADA", procedimiento: LIMPIEZA });
+  const cancelada = citaDe(5, "2002", "Ana Maria Gomez", diaHabilFuturo(3, 9), { id: 3, estado: "CANCELADA", procedimiento: LIMPIEZA });
+  const proxima = citaDe(5, "2002", "Ana Maria Gomez", diaHabilFuturo(8, 11), { id: 4, estado: "PENDIENTE" });
+  pacienteConHistorial("2002", [vencida, completada, cancelada, proxima]);
+
+  await verMisCitas("2002");
+  const [mensaje] = whatsappEnviados();
+  assert.match(mensaje.contenido, /Tu proxima cita/);
+  assert.match(mensaje.contenido, /Ortodoncia/);
+  assert.doesNotMatch(mensaje.contenido, /Limpieza/);
+  assert.equal(mensaje.contenido.split("•").length - 1, 1, "una sola cita");
+});
+
+test("ver mis citas: con varias citas proximas va un solo mensaje con todas (maximo 3, en orden)", async () => {
+  const citas = [12, 6, 20, 9].map((dias, i) => citaDe(5, "2003", "Ana Maria Gomez", diaHabilFuturo(dias, 10), { id: 10 + i }));
+  pacienteConHistorial("2003", citas);
+
+  await verMisCitas("2003");
+  const enviados = whatsappEnviados();
+  assert.equal(enviados.length, 1, "un solo mensaje");
+  assert.match(enviados[0].contenido, /Tus proximas citas/);
+  assert.equal(enviados[0].contenido.split("•").length - 1, 3);
+});
+
+test("ver mis citas: la respuesta del chat es identica exista o no la cedula (no revela nada)", async () => {
+  const proxima = citaDe(5, "2004", "Ana Maria Gomez", diaHabilFuturo(8, 11));
+  const vencida = citaDe(5, "2005", "Ana Maria Gomez", new Date(Date.now() - 40 * 86400000));
+  prisma.definir("paciente.findUnique", async ({ where, include }) => {
+    if (where.cedula === "2004") return { id: 5, nombre: "Ana Maria Gomez", cedula: "2004", telefono: "3001234567", citas: [proxima] };
+    if (where.cedula === "2005") return { id: 6, nombre: "Luis", cedula: "2005", telefono: "3001234567", citas: [] };
+    return null;
+  });
+
+  const conCita = await verMisCitas("2004");
+  const sinCitas = await verMisCitas("2005");
+  const inexistente = await verMisCitas("2006");
+  assert.equal(conCita.texto(), sinCitas.texto());
+  assert.equal(conCita.texto(), inexistente.texto());
+  assert.deepEqual(conCita.opciones(), inexistente.opciones());
+  assert.equal(whatsappEnviados().length, 1, "solo se envia cuando de verdad hay citas proximas");
+  void vencida;
+});
+
+test("ver mis citas: no se reenvia a la misma cedula en 2 minutos (evita llenar de mensajes a otra persona)", async () => {
+  const proxima = citaDe(5, "2007", "Ana Maria Gomez", diaHabilFuturo(8, 11));
+  pacienteConHistorial("2007", [proxima]);
+
+  const primera = await verMisCitas("2007");
+  const segunda = await verMisCitas("2007");
+  assert.equal(whatsappEnviados().length, 1);
+  assert.equal(primera.texto(), segunda.texto(), "la respuesta no delata que se bloqueo");
+});
+
+test("ver mis citas: sin celular registrado no envia nada y no falla", async () => {
+  const proxima = citaDe(5, "2008", "Ana Maria Gomez", diaHabilFuturo(8, 11));
+  pacienteConHistorial("2008", [proxima], { telefono: null });
+
+  const c = await verMisCitas("2008");
+  assert.equal(whatsappEnviados().length, 0);
+  assert.match(c.texto(), /WhatsApp/);
+});
+
+test("ver mis citas: si WhatsApp falla el chat responde igual (sin delatar que habia citas)", async () => {
+  const proxima = citaDe(5, "2009", "Ana Maria Gomez", diaHabilFuturo(8, 11));
+  pacienteConHistorial("2009", [proxima]);
+  const original = proveedorWhatsapp.enviarMensaje;
+  proveedorWhatsapp.enviarMensaje = async () => { throw new Error("proveedor caido"); };
+  const consoleError = console.error;
+  console.error = () => {};
+  try {
+    const c = await verMisCitas("2009");
+    const inexistente = await verMisCitas("2010");
+    assert.equal(c.texto(), inexistente.texto());
+  } finally {
+    proveedorWhatsapp.enviarMensaje = original;
+    console.error = consoleError;
+  }
+});
+
+test("ver mis citas: con la ventana de 24 h cerrada usa la plantilla aprobada del recordatorio, una por cita", async () => {
+  const citas = [6, 9].map((dias, i) => citaDe(5, "2011", "Ana Maria Gomez", diaHabilFuturo(dias, 10), { id: 20 + i }));
+  pacienteConHistorial("2011", citas);
+  const plantillas = [];
+  const { requierePlantillaFueraDeVentana, enviarPlantilla } = proveedorWhatsapp;
+  proveedorWhatsapp.requierePlantillaFueraDeVentana = () => true;
+  proveedorWhatsapp.enviarPlantilla = async (telefono, plantilla) => { plantillas.push({ telefono, ...plantilla }); return { id: `wamid.${plantillas.length}` }; };
+  try {
+    await verMisCitas("2011"); // mensajeWhatsapp.findFirst -> null: sin mensaje entrante en 24 h
+  } finally {
+    proveedorWhatsapp.requierePlantillaFueraDeVentana = requierePlantillaFueraDeVentana;
+    proveedorWhatsapp.enviarPlantilla = enviarPlantilla;
+  }
+  assert.equal(plantillas.length, 2);
+  assert.ok(plantillas.every((p) => p.nombre === "recordatorio_cita" && p.telefono === "3001234567"));
+  assert.equal(plantillas[0].parametros[0], "Ana");
 });
 
 test("reprogramar: mueve la cita a un horario libre, la deja PENDIENTE y avisa", async () => {
@@ -245,7 +384,8 @@ test("reprogramar: mueve la cita a un horario libre, la deja PENDIENTE y avisa",
   const c = await conversar();
   await c.decir("quiero reprogramar mi cita");
   await c.decir(CEDULA_ANA);
-  assert.match(c.texto(), /Tu cita actual es \*Ortodoncia\*/);
+  assert.match(c.texto(), /Encontre tu proxima cita/);
+  assert.doesNotMatch(c.texto(), /Ortodoncia/, "la cedula sola no basta para mostrar que cita es");
   await c.decir(`${fechaEnTexto(nuevo)} 3pm`);
   assert.match(c.texto(), /Vas a mover tu cita/);
   assert.equal(prisma.llamadasA("cita.update").length, 0, "todavia no cambia nada");
@@ -277,18 +417,24 @@ test("reprogramar: si se equivoco de cedula, el bot vuelve a pedirla y encuentra
   const c = await conversar();
   await c.decir("quiero reprogramar mi cita");
   await c.decir(CEDULA_ANA);
-  assert.match(c.texto(), /Ortodoncia/);
+  assert.match(c.texto(), /Encontre tu proxima cita/);
+
+  // Ya no se muestra la cita en pantalla: se comprueba a quien se busco.
+  const ultimaCedulaBuscada = () => prisma.llamadasA("paciente.findUnique").at(-1).args.where.cedula;
+  assert.equal(ultimaCedulaBuscada(), CEDULA_ANA);
 
   for (const frase of ["me equivoqué de cédula", "esa no es mi cedula", "no es mi cita"]) {
     await c.decir(frase);
     assert.match(c.texto(), /Escribe de nuevo tu numero de \*cedula\*/, frase);
     await c.decir(CEDULA_ANA);
-    assert.match(c.texto(), /Tu cita actual es/, "vuelve a mostrar una cita");
+    assert.match(c.texto(), /Encontre tu proxima cita/, "vuelve a encontrar la cita");
   }
 
   await c.decir("me equivoqué");
   await c.decir(CEDULA_LUIS);
-  assert.match(c.texto(), /Limpieza dental/, "ahora muestra la cita de la otra persona");
+  assert.match(c.texto(), /Encontre tu proxima cita/);
+  assert.equal(ultimaCedulaBuscada(), CEDULA_LUIS, "ahora busca la cedula de la otra persona");
+  assert.doesNotMatch(c.texto(), /Ortodoncia|Limpieza/, "sin datos de la cita en pantalla");
   assert.equal(prisma.llamadasA("cita.update").length, 0, "equivocarse nunca modifica citas");
 });
 

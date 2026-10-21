@@ -45,6 +45,43 @@ test("extraerHora: 'a las 3' sin am/pm se asume tarde (horario laboral)", () => 
   assert.deepEqual(f.extraerHora("a las 3"), { horas: 15, minutos: 0 });
 });
 
+test("extraerHora: 'y media', 'de la tarde', numeros en letras y mediodia", () => {
+  const casos = [
+    ["a las 8 y media", { horas: 8, minutos: 30 }],
+    ["a las 3 de la tarde", { horas: 15, minutos: 0 }],
+    ["3 de la tarde", { horas: 15, minutos: 0 }],
+    ["9 de la mañana", { horas: 9, minutos: 0 }],
+    ["a las tres y cuarto", { horas: 15, minutos: 15 }],
+    ["a la 1 de la tarde", { horas: 13, minutos: 0 }],
+    ["al mediodia", { horas: 12, minutos: 0 }],
+    ["a las diez", { horas: 10, minutos: 0 }],
+  ];
+  for (const [texto, esperada] of casos) {
+    assert.deepEqual(f.extraerHora(texto), esperada, `"${texto}"`);
+  }
+});
+
+test("extraerFecha: 'dentro de N dias', 'en N semanas'", () => {
+  assert.equal(f.extraerFecha("dentro de 3 dias", REF).getDate(), 17);
+  assert.equal(f.extraerFecha("en una semana", REF).getDate(), 21);
+  assert.equal(f.extraerFecha("en 2 semanas", REF).getDate(), 28);
+});
+
+test("extraerFecha: dia de la proxima semana (las semanas empiezan el lunes)", () => {
+  assert.equal(f.extraerFecha("el viernes de la proxima semana", REF).getDate(), 23);
+  assert.equal(f.extraerFecha("la proxima semana el lunes", REF).getDate(), 19);
+  assert.equal(f.extraerFecha("el miercoles de la proxima semana", REF).getDate(), 21); // hoy es miercoles
+});
+
+test("extraerFecha: 'el lunes proximo' no incluye hoy", () => {
+  assert.equal(f.extraerFecha("el miercoles proximo", REF).getDate(), 21);
+  assert.equal(f.extraerFecha("el proximo viernes", REF).getDate(), 16);
+});
+
+test("extraerFecha: 'manana a las 8 de la manana' es el dia siguiente", () => {
+  assert.equal(f.extraerFecha("mañana a las 8 de la mañana", REF).getDate(), 15);
+});
+
 test("extraerHora: sin hora devuelve null", () => {
   assert.equal(f.extraerHora("el viernes"), null);
   assert.equal(f.extraerHora("hola"), null);

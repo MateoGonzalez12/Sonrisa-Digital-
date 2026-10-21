@@ -89,33 +89,76 @@ async function registrarMensajeEntrante({ telefono, texto, citaId, proveedorMess
   });
 }
 
+// Texto libre y plantilla del recordatorio de una cita (cita con paciente y
+// procedimiento incluidos). Lo usan el recordatorio automatico y el detalle de
+// citas que se manda al WhatsApp cuando el paciente lo pide en el chat.
+function armarRecordatorio(cita) {
+  const nombre = cita.paciente.nombre.split(" ")[0];
+  const fecha = formatFechaHora(cita.fechaHora);
+  return {
+    texto:
+      `Hola ${nombre} 👋, te recordamos tu cita de ${cita.procedimiento.nombre} el ${fecha} ` +
+      `en Odontologia Especializada. Responde *CONFIRMAR* o *CANCELAR*.`,
+    plantilla: {
+      nombre: process.env.META_PLANTILLA_RECORDATORIO || "recordatorio_cita",
+      idioma: "es",
+      parametros: [nombre, cita.procedimiento.nombre, fecha],
+    },
+  };
+}
+
 // Recordatorio automatico con anticipacion configurada, sin
 // duplicarse para la misma cita (se marca recordatorioEnviado=true).
 async function enviarRecordatorio(cita) {
   if (cita.recordatorioEnviado || !cita.paciente.telefono) return null;
 
-  const texto =
-    `Hola ${cita.paciente.nombre.split(" ")[0]} 👋, te recordamos tu cita de ` +
-    `${cita.procedimiento.nombre} el ${formatFechaHora(cita.fechaHora)} en Odontologia Especializada. ` +
-    `Responde *CONFIRMAR* o *CANCELAR*.`;
-
+  const { texto, plantilla } = armarRecordatorio(cita);
   await enviarYRegistrar({
     telefono: cita.paciente.telefono,
     texto,
     citaId: cita.id,
     tipo: "recordatorio",
-    plantilla: {
-      nombre: process.env.META_PLANTILLA_RECORDATORIO || "recordatorio_cita",
-      idioma: "es",
-      parametros: [
-        cita.paciente.nombre.split(" ")[0],
-        cita.procedimiento.nombre,
-        formatFechaHora(cita.fechaHora),
-      ],
-    },
+    plantilla,
   });
   await prisma.cita.update({ where: { id: cita.id }, data: { recordatorioEnviado: true } });
   return texto;
+}
+
+// El paciente pidio ver sus citas en el chat (solo con la cedula). La informacion
+// no se muestra en pantalla: se manda al WhatsApp que el consultorio tiene
+// registrado, que es lo que identifica a la persona. Con la ventana de 24 h
+// abierta va un solo mensaje con todas las citas; con la ventana cerrada solo
+// pasan plantillas aprobadas, y se reutiliza la del recordatorio (una por cita).
+// Devuelve true si todos los mensajes salieron.
+async function enviarDetalleDeCitas({ paciente, citas }) {
+  if (!paciente.telefono || !citas.length) return false;
+  const telefono = paciente.telefono;
+  const conPaciente = citas.map((c) => ({ ...c, paciente }));
+
+  const ventanaAbierta = !proveedorWhatsapp.requierePlantillaFueraDeVentana() || (await dentroDeVentana24h(telefono));
+  const registros = [];
+  if (ventanaAbierta) {
+    const lineas = conPaciente.map(
+      (c) => `• ${c.procedimiento.nombre}: ${formatFechaHora(c.fechaHora)} (${c.estado === "CONFIRMADA" ? "confirmada" : "pendiente"})`
+    );
+    registros.push(
+      await enviarYRegistrar({
+        telefono,
+        texto:
+          `Hola ${paciente.nombre.split(" ")[0]} 👋, esto es lo que pediste en el chat de Odontologia Especializada.\n` +
+          `${citas.length > 1 ? "Tus proximas citas" : "Tu proxima cita"}:\n${lineas.join("\n")}`,
+        citaId: conPaciente[0].id,
+        tipo: "consulta_citas",
+      })
+    );
+  } else {
+    for (const cita of conPaciente) {
+      const { texto, plantilla } = armarRecordatorio(cita);
+      registros.push(await enviarYRegistrar({ telefono, texto, citaId: cita.id, tipo: "consulta_citas", plantilla }));
+    }
+  }
+  // enviarYRegistrar no lanza error si el proveedor falla: deja el mensaje sin id.
+  return registros.every((r) => Boolean(r.proveedorMessageId));
 }
 
 // Notifica al paciente cuando el consultorio reprograma/cancela su cita.
@@ -324,6 +367,7 @@ module.exports = {
   enviarYRegistrar,
   registrarMensajeEntrante,
   enviarRecordatorio,
+  enviarDetalleDeCitas,
   notificarCambioAlPaciente,
   procesarRespuestaEntrante,
   clasificarRespuesta,

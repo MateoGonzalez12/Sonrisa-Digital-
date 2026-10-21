@@ -92,9 +92,23 @@ function extraerFecha(textoOriginal, referencia = new Date()) {
   // 3") o la franja horaria ("el lunes por la manana"). Cuando viene precedido
   // de "por la / de la / en la" se refiere a la franja, no al dia, y no debe
   // interpretarse como el dia siguiente.
-  if (/\bmanana\b/.test(texto) && !/(?:por|de|en)\s+la\s+manana/.test(texto)) {
+  // Basta con que alguna "manana" NO vaya precedida de "por/de/en la": en
+  // "manana a las 8 de la manana" la primera es el dia y la segunda la franja.
+  if (/(?<!\b(?:por|de|en)\s+la\s+)\bmanana\b/.test(texto)) {
     const d = new Date(referencia);
     d.setDate(d.getDate() + 1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  // "dentro de 3 dias", "en 2 semanas", "en una semana"
+  const matchDentroDe = texto.match(
+    /\b(?:dentro\s+de|en)\s+(\d{1,2}|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+(dias?|semanas?)\b/
+  );
+  if (matchDentroDe) {
+    const cantidad = NUMEROS_EN_LETRAS[matchDentroDe[1]] || Number(matchDentroDe[1]);
+    const d = new Date(referencia);
+    d.setDate(d.getDate() + cantidad * (matchDentroDe[2].startsWith("semana") ? 7 : 1));
     d.setHours(0, 0, 0, 0);
     return d;
   }
@@ -116,17 +130,37 @@ function extraerFecha(textoOriginal, referencia = new Date()) {
   }
 
   // Nombre de dia de la semana ("jueves", "el viernes")
+  const semanaSiguiente = /\b(?:proxima semana|semana proxima|semana que viene|siguiente semana)\b/.test(texto);
   for (let i = 0; i < DIAS_SEMANA.length; i++) {
     const dia = DIAS_SEMANA[i];
-    if (new RegExp(`\\b${dia}\\b`).test(texto)) {
-      const base = new Date(referencia);
-      base.setHours(0, 0, 0, 0);
-      return proximoDiaSemana(base, i, true);
+    if (!new RegExp(`\\b${dia}\\b`).test(texto)) continue;
+
+    const base = new Date(referencia);
+    base.setHours(0, 0, 0, 0);
+
+    // "el martes de la proxima semana": el martes de la semana que sigue (las
+    // semanas empiezan el lunes), no el primero que llegue.
+    if (semanaSiguiente) {
+      const d = proximoDiaSemana(base, i, true);
+      const lunesSiguiente = new Date(base);
+      lunesSiguiente.setDate(base.getDate() - ((base.getDay() + 6) % 7) + 7);
+      if (d < lunesSiguiente) d.setDate(d.getDate() + 7);
+      return d;
     }
+
+    // "el lunes proximo" / "el proximo lunes" / "el lunes que viene": si hoy es
+    // lunes se refiere al de la semana que viene, no a hoy.
+    const esProximo = new RegExp(`(?:\\b(?:proximo|siguiente)\\s+${dia}\\b|\\b${dia}\\s+(?:proximo|que viene|siguiente)\\b)`).test(texto);
+    return proximoDiaSemana(base, i, !esProximo);
   }
 
   return null;
 }
+
+const NUMEROS_EN_LETRAS = {
+  un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7,
+  ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12,
+};
 
 function construirHora(horas, minutos, meridiano) {
   horas = Number(horas);
@@ -160,9 +194,24 @@ function extraerHora(textoOriginal) {
   match = texto.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
   if (match) return construirHora(match[1], match[2], null);
 
-  // 3) "a las 4", "a las 16"
-  match = texto.match(/a\s+las\s+(\d{1,2})(?::(\d{2}))?/);
-  if (match) return construirHora(match[1], match[2], null);
+  // 3) "a las 4", "a las 16", y con complementos: "a las 8 y media", "a las 3
+  //    de la tarde", "a las tres y cuarto", "a la 1 de la tarde"
+  match = texto.match(
+    /\ba\s+las?\s+(\d{1,2}|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)(?::(\d{2}))?(?:\s+y\s+(media|cuarto))?(?:\s+de\s+la\s+(manana|tarde|noche))?/
+  );
+  if (match) {
+    const horas = NUMEROS_EN_LETRAS[match[1]] || match[1];
+    const minutos = match[2] || (match[3] === "media" ? 30 : match[3] === "cuarto" ? 15 : null);
+    const meridiano = match[4] === "manana" ? "am" : match[4] ? "pm" : null;
+    return construirHora(horas, minutos, meridiano);
+  }
+
+  // "al mediodia" / "medio dia"
+  if (/\bmedio\s*dia\b/.test(texto)) return { horas: 12, minutos: 0 };
+
+  // "3 de la tarde", "9 de la manana" (sin "a las")
+  match = texto.match(/\b(\d{1,2})(?::(\d{2}))?\s+de\s+la\s+(manana|tarde|noche)\b/);
+  if (match) return construirHora(match[1], match[2], match[3] === "manana" ? "am" : "pm");
 
   // 4) "4 horas" / "16h"
   match = texto.match(/\b(\d{1,2})\s*(?:h|horas)\b/);

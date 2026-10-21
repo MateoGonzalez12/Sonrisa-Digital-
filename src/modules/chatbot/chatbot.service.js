@@ -565,32 +565,55 @@ async function pasoAgendarConfirmar(estado, mensaje) {
 // ---------------------------------------------------------------------------
 // Flujo VER MIS CITAS
 // ---------------------------------------------------------------------------
+// La cedula sola no identifica a nadie (la sabe mucha gente), asi que "ver mis
+// citas" NO muestra nada en pantalla: el detalle se manda al WhatsApp que el
+// consultorio tiene registrado para esa cedula. La respuesta del chat es siempre
+// la misma, haya o no citas, para que no sirva para averiguar si una cedula es
+// paciente ni cuando tiene cita.
+const MAX_CITAS_A_ENVIAR = 3;
+// Para que alguien que conozca una cedula ajena no pueda usar el chat para llenar
+// de mensajes el WhatsApp de esa persona.
+const ESPERA_ENTRE_ENVIOS_MS = 2 * 60 * 1000;
+const ultimosEnvios = new Map(); // cedula -> cuando se envio por ultima vez
+
+const MENSAJE_DETALLE_ENVIADO =
+  "Listo ✅ Si esa cedula tiene citas proximas, te enviamos el detalle por WhatsApp al numero registrado. " +
+  "Si no te llega en unos minutos, llamanos o escribenos al *320 326 3703*.";
+
 async function pasoVerCitasCedula(estado, mensaje) {
   const cedula = limpiarCedula(mensaje);
-  const paciente = await prisma.paciente.findUnique({
-    where: { cedula },
-    include: { citas: { where: { estado: { not: "CANCELADA" } }, orderBy: { fechaHora: "asc" }, include: { procedimiento: true }, take: 1 } },
-  });
-
   estado.paso = "ESPERANDO_INTENCION";
 
-  if (!paciente || !paciente.citas.length) {
-    return { estado, respuestas: [texto("No encontre citas activas con esa cedula.", ["Agendar una cita"])] };
+  const ahora = Date.now();
+  for (const [clave, cuando] of ultimosEnvios) if (ahora - cuando > ESPERA_ENTRE_ENVIOS_MS) ultimosEnvios.delete(clave);
+
+  if (!ultimosEnvios.has(cedula)) {
+    try {
+      // Solo citas que todavia importan: futuras y no canceladas ni completadas.
+      const paciente = await prisma.paciente.findUnique({
+        where: { cedula },
+        include: {
+          citas: {
+            where: { estado: { in: ["PENDIENTE", "CONFIRMADA"] }, fechaHora: { gte: new Date() } },
+            orderBy: { fechaHora: "asc" },
+            include: { procedimiento: true },
+            take: MAX_CITAS_A_ENVIAR,
+          },
+        },
+      });
+      if (paciente && paciente.citas.length) {
+        ultimosEnvios.set(cedula, ahora);
+        const enviado = await notificaciones.enviarDetalleDeCitas({ paciente, citas: paciente.citas });
+        if (!enviado) console.error("[chatbot] no se pudo enviar por WhatsApp el detalle de citas del paciente", paciente.id);
+      }
+    } catch (err) {
+      console.error("[chatbot] fallo al enviar el detalle de citas:", err.message);
+    }
   }
 
-  const cita = paciente.citas[0];
   return {
     estado,
-    respuestas: [
-      texto("Esta es tu proxima cita registrada:"),
-      tarjeta(null, {
-        paciente: paciente.nombre,
-        procedimiento: cita.procedimiento.nombre,
-        fechaHora: formatFechaHora(cita.fechaHora),
-        estado: cita.estado === "CONFIRMADA" ? "Confirmada" : "Pendiente",
-      }),
-      texto("¿Que deseas hacer?", ["Reprogramar", "Cancelar cita", "Agendar una nueva"]),
-    ],
+    respuestas: [texto(MENSAJE_DETALLE_ENVIADO, ["Reprogramar", "Cancelar cita", "Agendar una nueva"])],
   };
 }
 
@@ -620,7 +643,8 @@ async function pasoReprogramarCedula(estado, mensaje) {
   return {
     estado,
     respuestas: [
-      texto(`Tu cita actual es *${cita.procedimiento.nombre}* el ${formatFechaHora(cita.fechaHora)}. ¿Para que nuevo dia y hora la quieres mover?`),
+      // Sin procedimiento ni fecha: la cedula sola no identifica a nadie y esto se vera en pantalla.
+      texto("Encontre tu proxima cita. ¿Para que nuevo dia y hora la quieres mover?"),
     ],
   };
 }
@@ -695,7 +719,8 @@ async function pasoCancelarCedula(estado, mensaje) {
   return {
     estado,
     respuestas: [
-      texto(`Tu cita es *${cita.procedimiento.nombre}* el ${formatFechaHora(cita.fechaHora)}. ¿Confirmas que quieres cancelarla?`, [
+      // Sin procedimiento ni fecha: la cedula sola no identifica a nadie (usa "Ver mis citas" para el detalle por WhatsApp).
+      texto("Encontre tu proxima cita. ¿Confirmas que quieres cancelarla?", [
         "Si, cancelar",
         "No, mantenerla",
       ]),
